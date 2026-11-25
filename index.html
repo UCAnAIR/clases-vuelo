@@ -81,6 +81,8 @@
   .fecha .num { font-size: 40px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px; }
   .info .hora { font: 600 20px/1.2 var(--display); font-variant-numeric: tabular-nums; }
   .info .extra { color: var(--muted); font-size: 15px; }
+  .info .lugar { font-size: 15px; color: var(--ink); display: flex; gap: 5px; align-items: center; }
+  .info .lugar::before { content: ""; width: 12px; height: 12px; flex: none; background: var(--accent); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z'/%3E%3C/svg%3E") center/contain no-repeat; }
   .estado { text-align: right; font-size: 15px; }
   .asientos { display: flex; gap: 5px; justify-content: flex-end; margin-bottom: 6px; flex-wrap: wrap; max-width: 140px; margin-left: auto; }
   .asientos i { width: 12px; height: 16px; border-radius: 4px 4px 3px 3px; border: 2px solid var(--orange); }
@@ -499,7 +501,6 @@
   function pintarDatos() {
     const pil = (datos.clases[0] && datos.clases[0].pilotos) || [];
     const trozos = [];
-    if (datos.lugar) trozos.push(`Lugar: <b>${esc(datos.lugar)}</b>`);
     if (datos.cierreHoras) trozos.push(`Se puede reservar hasta ${datos.cierreHoras} h antes`);
     if (datos.maximo) trozos.push(`Máximo ${datos.maximo} reserva${datos.maximo === 1 ? "" : "s"} pendiente${datos.maximo === 1 ? "" : "s"} por persona`);
     $("datos").innerHTML = trozos.map((t) => `<span>${t}</span>`).join("");
@@ -534,7 +535,7 @@
       html += `<button type="button" class="clase ${c.estado}" data-fecha="${c.fecha}" aria-pressed="${elegida === c.fecha}" ${reservable ? "" : 'aria-disabled="true"'}>
         <div class="fecha" aria-hidden="true"><div class="dow">${DIAS_C[p.dow]}</div><div class="num">${p.d}</div></div>
         <span class="sr">${esc(capital(fechaLarga(c.fecha)))}.</span>
-        <div class="info"><div class="hora">${c.inicio} – ${c.fin}</div><div class="extra">${esc(extra)}</div>${misFechas.has(c.fecha) && c.estado !== "cancelada" ? `<span class="mia">${misFechas.get(c.fecha) === "espera" ? "En lista de espera" : "✓ Tienes plaza"}</span>` : ""}</div>
+        <div class="info"><div class="hora">${c.inicio} – ${c.fin}</div>${c.lugar && c.estado !== "cancelada" ? `<div class="lugar">${esc(c.lugar)}</div>` : ""}<div class="extra">${esc(extra)}</div>${misFechas.has(c.fecha) && c.estado !== "cancelada" ? `<span class="mia">${misFechas.get(c.fecha) === "espera" ? "En lista de espera" : "✓ Tienes plaza"}</span>` : ""}</div>
         <div class="estado">${puntos}${textoEstado(c)}</div>
       </button>`;
     }
@@ -567,7 +568,7 @@
       return;
     }
     $("panel-titulo").textContent = capital(fechaLarga(c.fecha));
-    $("panel-elegida").textContent = `De ${c.inicio} a ${c.fin}` + (c.pilotos && c.pilotos.length ? ` con ${c.pilotos.join(" y ")}` : "");
+    $("panel-elegida").textContent = `De ${c.inicio} a ${c.fin}` + (c.pilotos && c.pilotos.length ? ` con ${c.pilotos.join(" y ")}` : "") + (c.lugar ? `, en ${c.lugar}` : "");
     b.disabled = enviando;
     b.textContent = enviando ? "Enviando…" : c.estado === "espera" ? "Apuntarme a la lista de espera" : "Reservar plaza";
     $("pie").textContent = c.estado === "espera"
@@ -719,7 +720,7 @@
         : '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>'}</div>
       <h3 tabindex="-1">${ok ? "¡Plaza confirmada!" : sorpresa ? "La clase se ha llenado mientras reservabas" : "Estás en la lista de espera"}</h3>
       ${sorpresa ? `<p>Te hemos puesto en la lista de espera (puesto ${r.posicion}). Si alguien cancela, entrarás tú. Si no te interesa, sal desde «Ver o cancelar esta reserva».</p>` : ""}
-      <p><b>${esc(capital(fechaLarga(r.fecha)))}</b>, de ${r.inicio} a ${r.fin}${ok ? "" : ` · puesto ${r.posicion}`}</p>
+      <p><b>${esc(capital(fechaLarga(r.fecha)))}</b>, de ${r.inicio} a ${r.fin}${r.lugar ? `, en ${esc(r.lugar)}` : ""}${ok ? "" : ` · puesto ${r.posicion}`}</p>
       <p style="color:var(--muted);font-size:15px">${r.correoEnviado === false
         ? "No hemos podido enviarte el correo de confirmación. Guarda el enlace de abajo para poder cancelar."
         : `Te hemos enviado un correo a <b>${esc(r.correo)}</b> con un enlace para cancelar. Mira en spam si no lo ves.`}</p>
@@ -763,7 +764,7 @@
     cont.innerHTML = `<div class="resultado">
       <div class="icono ${etiqueta[0]}">${etiqueta[0] === "ok" ? "✓" : etiqueta[0] === "espera" ? "…" : "✕"}</div>
       <h3 tabindex="-1">${esc(etiqueta[1])}</h3>
-      <p><b>${esc(capital(fechaLarga(r.fecha)))}</b>, de ${r.inicio} a ${r.fin}</p>
+      <p><b>${esc(capital(fechaLarga(r.fecha)))}</b>, de ${r.inicio} a ${r.fin}${r.lugar ? `, en ${esc(r.lugar)}` : ""}</p>
       <p style="color:var(--muted);font-size:15px">${esc(r.nombre)} · ${esc(r.correo)}</p>
       <div class="acciones" id="acciones-reserva">${r.sePuedeCancelar
         ? `<button class="btn secondary" type="button" id="cancelar">${r.estado === "Confirmada" ? "Cancelar mi plaza" : "Salir de la lista de espera"}</button>`
@@ -807,6 +808,7 @@
       const est = n === 4 ? "cancelada" : ocup >= plazas ? "espera" : "abierta";
       const cierre = new Date(f.getFullYear(), f.getMonth(), f.getDate(), -2).toISOString();
       clases.push({ fecha: iso, inicio: "10:00", fin: "13:00", plazas, ocupadas: Math.min(ocup, plazas), enEspera: n === 1 ? 1 : 0, estado: est,
+        lugar: n === 2 ? "Pista de la Universidad" : "Club de Aeromodelismo El Muro",
         pilotos: n === 3 ? ["Fabio Fernández Ruiz", "Otro instructor"] : ["Fabio Fernández Ruiz"], nota: n === 4 ? "Previsión de viento fuerte" : n === 3 ? "Dos instructores: más plazas" : "", cierre });
     }
     if (d.accion === "clases") return { ok: true, clases, lugar: "", aviso: "", cierreHoras: 12, maximo: 1, listaEspera: true };
@@ -951,7 +953,7 @@
       <summary>
         <span><span class="t">${esc(capital(fechaLarga(c.fecha)))}</span><span class="chip ${chip[0]}">${chip[1]}</span>${cambiado}</span>
         <span class="n">${c.estado === "cancelada" || c.sinClase ? "—" : `${conf.length}/${c.plazas}`}<small>${c.estado === "cancelada" || c.sinClase ? "" : "plazas"}</small></span>
-        <span class="s">${c.inicio}–${c.fin}${c.pilotos && c.pilotos.length ? " · " + esc(c.pilotos.join(", ")) : ""}${esp.length ? ` · ${esp.length} en espera` : ""}</span>
+        <span class="s">${c.inicio}–${c.fin}${c.pilotos && c.pilotos.length ? " · " + esc(c.pilotos.join(", ")) : ""}${c.lugar ? " · " + esc(c.lugar) : ""}${esp.length ? ` · ${esp.length} en espera` : ""}</span>
       </summary>
       <div class="adm-cuerpo">
         ${msg ? `<p class="banda ${msg.error ? "error" : "info"}" style="margin:0" role="status">${esc(msg.texto)}</p>` : ""}
@@ -983,7 +985,7 @@
         <form class="caja" id="editar-${id}" data-editar="${c.fecha}" hidden novalidate action="javascript:void 0">
           <fieldset class="opciones"><legend>¿Qué pasa este día?</legend>
             <label><input type="radio" name="tipo" value="normal" ${tipoActual === "normal" ? "checked" : ""}> ${c.habitual ? "Clase normal" : "Sin clase"}</label>
-            <label><input type="radio" name="tipo" value="cambio" ${tipoActual === "cambio" ? "checked" : ""}> ${c.habitual ? "Cambiar horario o plazas" : "Clase extra"}</label>
+            <label><input type="radio" name="tipo" value="cambio" ${tipoActual === "cambio" ? "checked" : ""}> ${c.habitual ? "Cambiar horario, lugar o plazas" : "Clase extra"}</label>
             <label><input type="radio" name="tipo" value="cancelada" ${tipoActual === "cancelada" ? "checked" : ""}> Cancelar la clase</label>
           </fieldset>
           ${tipoActual === "cancelada" ? '<p class="ayuda">Si la vuelves a poner en marcha, las reservas que había vuelven a como estaban y se avisa a cada persona.</p>' : ""}
@@ -992,6 +994,7 @@
               <div class="campo"><label for="ei-${id}">Hora de inicio</label><input id="ei-${id}" name="inicio" type="text" inputmode="text" autocomplete="off" placeholder="${esc(ADM.datos.base.inicio)}" value="${esc(e.inicio || "")}" maxlength="5"><small class="aviso" data-aviso="inicio"></small></div>
               <div class="campo"><label for="ef-${id}">Hora de fin</label><input id="ef-${id}" name="fin" type="text" inputmode="text" autocomplete="off" placeholder="${esc(ADM.datos.base.fin)}" value="${esc(e.fin || "")}" maxlength="5"><small class="aviso" data-aviso="fin"></small></div>
             </div>
+            <div class="campo"><label for="el-${id}">Lugar ese día</label><input id="el-${id}" name="lugar" type="text" autocomplete="off" placeholder="${esc(ADM.datos.base.lugar || "")}" value="${esc(e.lugar || "")}" maxlength="120"><small class="aviso" data-aviso="lugar"></small></div>
             <div class="campo"><label for="ep-${id}">Instructores ese día, separados por comas</label><input id="ep-${id}" name="pilotos" type="text" placeholder="${esc(ADM.datos.base.pilotos)}" value="${esc(e.pilotos || "")}" maxlength="300"><small class="aviso" data-aviso="pilotos"></small></div>
             <div class="dos">
               <div class="campo"><label for="ex-${id}">Plazas extra (+ o −)</label><input id="ex-${id}" name="extra" type="text" inputmode="text" autocomplete="off" placeholder="0" value="${esc(e.extra ? String(e.extra) : "")}" maxlength="4"><small class="aviso" data-aviso="extra"></small></div>
@@ -1059,12 +1062,12 @@
       const plazasNuevas = tipo === "cambio" ? f.elements.plazas.value.trim() : "";
       if (plazasNuevas !== "" && Number(plazasNuevas) < confirmadas && !confirm(`Hay ${confirmadas} apuntados y dejas ${plazasNuevas} plazas. Nadie se da de baja solo: quita tú a quien sobre. ¿Guardar?`)) return;
       const datosDia = { accion: "adminDia", fecha, tipo, nota: f.elements.nota.value };
-      if (tipo === "cambio") ["inicio", "fin", "pilotos", "extra", "plazas"].forEach((k) => (datosDia[k] = f.elements[k].value.trim().replace("−", "-")));
+      if (tipo === "cambio") ["inicio", "fin", "pilotos", "extra", "plazas", "lugar"].forEach((k) => (datosDia[k] = f.elements[k].value.trim().replace("−", "-")));
       ocupado(true);
       const r = await admPedir(datosDia, { reintentos: 1 });
       ocupado(false);
       if (!r.ok) { if (r.campos) Object.entries(r.campos).forEach(([k, t]) => aviso(k, t)); if (r.codigo !== "sesion") aviso("general", r.campos ? "Revisa los datos marcados." : r.error); const mal = f.querySelector("[aria-invalid=true]"); if (mal) mal.focus(); return; }
-      ADM.mensaje = { fecha, texto: "Día guardado." + (r.restauradas ? ` ${r.restauradas} reserva${r.restauradas === 1 ? " vuelve" : "s vuelven"} a estar como antes de cancelar y se les ha avisado.` : "") + (r.avisadosHorario ? ` Se ha avisado del nuevo horario a ${r.avisadosHorario} persona${r.avisadosHorario === 1 ? "" : "s"}.` : "") + (r.aviso ? " " + r.aviso : "") + (r.avisados ? ` Se ha avisado a ${r.avisados} persona${r.avisados === 1 ? "" : "s"}.` : "") + (r.ascendidos && r.ascendidos.length ? ` Han entrado desde la lista de espera: ${r.ascendidos.join(", ")}.` : "") };
+      ADM.mensaje = { fecha, texto: "Día guardado." + (r.restauradas ? ` ${r.restauradas} reserva${r.restauradas === 1 ? " vuelve" : "s vuelven"} a estar como antes de cancelar y se les ha avisado.` : "") + (r.avisadosHorario ? ` Se ha avisado del cambio a ${r.avisadosHorario} persona${r.avisadosHorario === 1 ? "" : "s"}.` : "") + (r.aviso ? " " + r.aviso : "") + (r.avisados ? ` Se ha avisado a ${r.avisados} persona${r.avisados === 1 ? "" : "s"}.` : "") + (r.ascendidos && r.ascendidos.length ? ` Han entrado desde la lista de espera: ${r.ascendidos.join(", ")}.` : "") };
       admCargar();
     }
   });
