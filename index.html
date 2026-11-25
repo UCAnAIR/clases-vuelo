@@ -16,7 +16,7 @@
   /* Paleta: tinta azul noche, azul y naranja de UCA&Air. El tema sigue al del dispositivo. */
   :root {
     --bg: #ffffff; --surface: #ffffff; --field: #f6f9fa; --line: #d9e2e7; --line-strong: #b9c7cf; --input-line: #768a94;
-    --ink: #102530; --muted: #5d717b; --accent: #126586; --accent-soft: #e5f0f5;
+    --ink: #102530; --muted: #4c606a; --accent: #126586; --accent-soft: #e5f0f5;
     --orange: #a9560a; --orange-soft: #fcefe2; --seat-taken: #8c9ea7;
     --ok: #1d6b47; --ok-soft: #e4f3eb; --warn: #8a5300; --warn-soft: #fdf1dc; --err: #b3261e; --err-soft: #fbe9e7;
     --btn: #102530; --btn-ink: #ffffff;
@@ -27,7 +27,7 @@
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #1f1e1d; --surface: #2a2927; --field: #32312e; --line: #3b3a37; --line-strong: #52504c; --input-line: #827f78; --seat-taken: #6b6964;
-      --ink: #ecebe7; --muted: #aeaca5; --accent: #8cc2dd; --accent-soft: #2c3337;
+      --ink: #ecebe7; --muted: #b8b6af; --accent: #8cc2dd; --accent-soft: #2c3337;
       --orange: #f0a252; --orange-soft: #3a2e20;
       --ok: #8fd1ad; --ok-soft: #26302a; --warn: #eec571; --warn-soft: #36301f; --err: #ff978c; --err-soft: #3d2826;
       --btn: #ecebe7; --btn-ink: #1f1e1d;
@@ -61,7 +61,7 @@
 
   .layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 48px; align-items: start; }
   @media (max-width: 900px) { .layout { grid-template-columns: 1fr; gap: 32px; } }
-  h2 { font: 600 24px/1.2 var(--display); margin: 0 0 14px; }
+  h2 { font: 600 26px/1.2 var(--display); margin: 0 0 14px; }
   .mes { margin: 28px 0 10px; font: 600 17px/1.2 var(--display); color: var(--muted); }
   .mes:first-of-type { margin-top: 0; }
 
@@ -72,7 +72,17 @@
     display: grid; grid-template-columns: 70px 1fr auto; gap: 18px; align-items: center;
     padding: 14px 18px 14px 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden;
   }
-  .clase:hover:not([aria-disabled="true"]) { border-color: var(--line-strong); }
+  .clase { transition: border-color .15s, box-shadow .2s, transform .2s cubic-bezier(.2,.7,.3,1); }
+  .clase:hover:not([aria-disabled="true"]) { border-color: var(--line-strong); transform: translateY(-1px); box-shadow: var(--shadow); }
+  .clase:active:not([aria-disabled="true"]) { transform: translateY(0) scale(.995); }
+  .aparece { animation: subir .4s cubic-bezier(.2,.7,.3,1) both; animation-delay: calc(var(--i, 0) * 45ms); }
+  @keyframes subir { from { opacity: 0; transform: translateY(10px); } }
+  @keyframes pop { 0% { transform: scale(.5); opacity: 0; } 70% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); } }
+  @keyframes fundido { from { opacity: 0; } }
+  .btn { transition: transform .12s, opacity .15s, background-color .15s; }
+  .btn:active:not(:disabled) { transform: scale(.98); }
+  details.adm[open] > .adm-cuerpo { animation: fundido .25s ease-out; }
+  .caja:not([hidden]) { animation: subir .25s cubic-bezier(.2,.7,.3,1) both; }
   .clase[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
   .clase[aria-disabled="true"] { cursor: default; }
   .clase[aria-disabled="true"] .fecha .num, .clase[aria-disabled="true"] .info .hora { opacity: .55; }
@@ -80,12 +90,12 @@
   .fecha .dow { font-size: 15px; font-weight: 600; color: var(--muted); }
   .fecha .num { font-size: 40px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px; }
   .info .hora { font: 600 20px/1.2 var(--display); font-variant-numeric: tabular-nums; }
-  .info .extra { color: var(--muted); font-size: 15px; }
-  .info .lugar { font-size: 15px; color: var(--ink); display: flex; gap: 5px; align-items: center; }
+  .info .extra { color: var(--muted); font-size: 16px; }
+  .info .lugar { font-size: 16px; color: var(--ink); display: flex; gap: 5px; align-items: center; }
   .info .lugar::before { content: ""; width: 12px; height: 12px; flex: none; background: var(--accent); -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z'/%3E%3C/svg%3E") center/contain no-repeat; }
-  .estado { text-align: right; font-size: 15px; }
+  .estado { text-align: right; font-size: 16px; }
   .asientos { display: flex; gap: 5px; justify-content: flex-end; margin-bottom: 6px; flex-wrap: wrap; max-width: 140px; margin-left: auto; }
-  .asientos i { width: 12px; height: 16px; border-radius: 4px 4px 3px 3px; border: 2px solid var(--orange); }
+  .asientos i { width: 13px; height: 17px; border-radius: 4px 4px 3px 3px; border: 2px solid var(--orange); transition: background-color .3s, border-color .3s; }
   .asientos i.ocupado { background: var(--seat-taken); border-color: var(--seat-taken); }
   .t-abierta { color: var(--orange); font-weight: 600; }
   .t-espera { color: var(--warn); font-weight: 600; }
@@ -109,7 +119,7 @@
   .panel .elegida { color: var(--muted); margin: 0 0 18px; }
   form { display: grid; gap: 14px; }
   .campo { display: grid; gap: 5px; }
-  label { font-size: 15px; color: var(--muted); }
+  label { font-size: 15px; color: var(--muted); font-weight: 500; }
   input[type="text"], input[type="email"], input[type="tel"], input[type="number"], textarea {
     font: inherit; font-size: 17px; width: 100%; padding: 11px 12px; border: 1px solid var(--input-line); border-radius: 8px; background: var(--field); color: var(--ink);
   }
@@ -141,6 +151,7 @@
   .pie { color: var(--muted); font-size: 14px; margin: 0; }
   .resultado { text-align: center; }
   .resultado .icono { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; margin: 4px auto 12px; font-size: 24px; font-weight: 700; }
+  .resultado .icono { animation: pop .45s cubic-bezier(.2,.7,.3,1) both; }
   .resultado .icono.ok { background: var(--ok-soft); color: var(--ok); }
   .resultado .icono.espera { background: var(--warn-soft); color: var(--warn); }
   .resultado .icono.no { background: var(--err-soft); color: var(--err); }
@@ -167,6 +178,18 @@
   .coche ul { margin: 6px 0 0; padding-left: 18px; }
   .coche li { margin: 2px 0; }
   .mis { margin-bottom: 32px; }
+  .proxima { display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; align-items: center; padding: 18px; border-radius: 16px; background: var(--accent-soft); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); margin-bottom: 12px; }
+  .proxima .pr-fecha { width: 78px; text-align: center; border-radius: 12px; background: var(--surface); padding: 8px 0 10px; font-family: var(--display); line-height: 1; box-shadow: var(--shadow); }
+  .proxima .pr-fecha .dow, .proxima .pr-fecha .mes { display: block; font-size: 14px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+  .proxima .pr-fecha .num { display: block; font-size: 38px; font-weight: 700; margin: 3px 0; font-variant-numeric: tabular-nums; }
+  .proxima .pr-eyebrow { margin: 0; font-size: 14px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: .05em; }
+  .proxima h3 { margin: 2px 0 4px; font: 700 24px/1.15 var(--display); }
+  .proxima .pr-det { margin: 6px 0 0; color: var(--ink); font-size: 16px; }
+  .proxima .pr-det .chip { margin-left: 0; margin-right: 6px; }
+  .proxima .pr-acc { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .proxima .pr-acc .btn { flex: 1 1 150px; }
+  .proxima .cuenta { color: var(--ink); }
+  @media (max-width: 520px) { .proxima { padding: 14px; gap: 4px 14px; } .proxima .pr-fecha { width: 66px; } .proxima .pr-fecha .num { font-size: 32px; } .proxima h3 { font-size: 21px; } }
   .mis ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
   .mis li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; background: var(--accent-soft); }
   .mis a { white-space: nowrap; font-size: 15px; }
@@ -183,6 +206,26 @@
   .adm-cab .quien { color: var(--muted); font-size: 15px; overflow-wrap: anywhere; }
   .adm-cab .botones { display: flex; gap: 8px; flex-wrap: wrap; }
   .adm-lista { display: grid; gap: 12px; }
+  .meteo-opc { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; border: 0; padding: 0; margin: 0; }
+  .meteo-opc legend { font-size: 15px; color: var(--muted); margin-bottom: 8px; padding: 0; }
+  .meteo-opc label { display: grid; justify-items: center; gap: 6px; padding: 12px 6px 10px; border: 1px solid var(--line-strong); border-radius: 12px; background: var(--surface); color: var(--ink); cursor: pointer; font-weight: 600; font-size: 15px; transition: border-color .15s, background-color .15s, transform .12s; }
+  .meteo-opc label:hover { border-color: var(--ink); }
+  .meteo-opc label:has(input:checked) { border-color: var(--err); background: var(--err-soft); color: var(--err); box-shadow: inset 0 0 0 1px var(--err); }
+  .meteo-opc label:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .meteo-opc input { position: absolute; opacity: 0; pointer-events: none; }
+  .meteo-opc svg { width: 30px; height: 30px; }
+  .btn .ico { width: 18px; height: 18px; vertical-align: -3px; margin-right: 6px; }
+  .slider-campo output { font: 700 20px/1 var(--display); color: var(--ink); margin-left: 6px; font-variant-numeric: tabular-nums; }
+  input[type=range] { width: 100%; accent-color: var(--accent); height: 32px; cursor: pointer; }
+  .marcas { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-top: -4px; }
+  .etiquetas { display: flex; flex-wrap: wrap; gap: 6px; }
+  .etiquetas button { min-height: 36px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font: inherit; font-size: 14px; cursor: pointer; transition: background-color .15s, border-color .15s; }
+  .etiquetas button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  .paso { display: flex; align-items: stretch; gap: 0; border: 1px solid var(--input-line); border-radius: 8px; overflow: hidden; background: var(--surface); }
+  .paso button { min-width: 48px; border: 0; background: var(--field); color: var(--ink); font: 600 22px/1 var(--text); cursor: pointer; }
+  .paso button:active { background: var(--line); }
+  .paso input { border: 0 !important; border-radius: 0 !important; text-align: center; font-weight: 600; background: var(--surface) !important; min-width: 0; }
+  input[type=time] { font: inherit; font-size: 17px; width: 100%; padding: 9px 12px; border: 1px solid var(--input-line); border-radius: 8px; background: var(--surface); color: var(--ink); color-scheme: light dark; }
   .ayudante { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 14px; border-radius: 10px; background: var(--field); }
   .ayudante .q { font-weight: 600; margin-right: auto; }
   .ayudante .q small { display: block; font-weight: 400; font-size: 14px; color: var(--muted); }
@@ -305,8 +348,11 @@
   <div class="layout" id="vista-principal">
     <section>
       <div class="mis" id="mis" hidden>
-        <h2>Tus reservas</h2>
-        <ul id="mis-lista"></ul>
+        <div id="proxima"></div>
+        <div id="mis-resto" hidden>
+          <h2 style="font-size:20px">Tus otras reservas</h2>
+          <ul id="mis-lista"></ul>
+        </div>
       </div>
       <h2>Próximas clases</h2>
       <div id="calendario">
@@ -609,6 +655,7 @@
     if (!datos.clases.length) { cont.innerHTML = '<div class="vacio">Ahora mismo no hay clases programadas. Vuelve a mirar más adelante.</div>'; return; }
     let html = "", mesActual = "";
     const misFechas = new Map(misVisibles().map((m) => [m.fecha, m.estado]));
+    const animar = !cont.dataset.pintado; cont.dataset.pintado = "1"; let n = 0; // la entrada animada solo la primera vez
     for (const c of datos.clases) {
       const p = partes(c.fecha), mes = MESES[p.m - 1] + " " + p.y;
       if (mes !== mesActual) { if (mesActual) html += "</div>"; html += `<div class="mes">${mes}</div><div class="clases">`; mesActual = mes; }
@@ -617,7 +664,7 @@
         `<div class="asientos" aria-hidden="true">${Array.from({ length: c.plazas }, (_, i) => `<i class="${i < c.ocupadas ? "ocupado" : ""}"></i>`).join("")}</div>`;
       const extra = c.estado === "cancelada" ? (c.nota || "Clase cancelada") :
         [c.pilotos && c.pilotos.length ? (c.pilotos.length > 1 ? "Instructores: " : "Instructor: ") + c.pilotos.join(", ") : "", c.nota].filter(Boolean).join(" · ");
-      html += `<button type="button" class="clase ${c.estado}" data-fecha="${c.fecha}" aria-pressed="${elegida === c.fecha}" ${reservable ? "" : 'aria-disabled="true"'}>
+      html += `<button type="button" class="clase ${c.estado}${animar ? " aparece" : ""}" style="--i:${n++}" data-fecha="${c.fecha}" aria-pressed="${elegida === c.fecha}" ${reservable ? "" : 'aria-disabled="true"'}>
         <div class="fecha" aria-hidden="true"><div class="dow">${DIAS_C[p.dow]}</div><div class="num">${p.d}</div></div>
         <span class="sr">${esc(capital(fechaLarga(c.fecha)))}.</span>
         <div class="info"><div class="hora">${c.inicio} – ${c.fin}</div>${c.lugar && c.estado !== "cancelada" ? `<div class="lugar">${esc(c.lugar)}</div>` : ""}<div class="extra">${esc(extra)}</div>${misFechas.has(c.fecha) && c.estado !== "cancelada" ? `<span class="mia">${misFechas.get(c.fecha) === "espera" ? "En lista de espera" : "✓ Tienes plaza"}</span>` : ""}</div>
@@ -673,12 +720,30 @@
     guardado.poner("misReservas", mias);
     const lista = misVisibles().slice().sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
     $("mis").hidden = !lista.length;
-    $("mis-lista").innerHTML = lista.map((m) => {
+    $("proxima").innerHTML = lista.length ? tarjetaProxima(lista[0], fechas.get(lista[0].fecha), hoyIso) : "";
+    $("mis-resto").hidden = lista.length < 2;
+    $("mis-lista").innerHTML = lista.slice(1).map((m) => {
       const c = fechas.get(m.fecha);
       const cancelada = c && c.estado === "cancelada";
       return `<li><span><b>${esc(capital(fechaLarga(m.fecha)))}</b>${c ? ` · ${c.inicio}–${c.fin}` : ""}${m.estado === "espera" ? " · en lista de espera" : ""}${cancelada ? ' · <span style="color:var(--err)">clase cancelada</span>' : ""}</span>
         <a href="?reserva=${encodeURIComponent(m.clave)}" aria-label="Ver o cancelar la reserva del ${esc(fechaLarga(m.fecha))}">Ver o cancelar</a></li>`;
     }).join("");
+  }
+  function tarjetaProxima(m, c, hoyIso) {
+    const p = partes(m.fecha), h = partes(hoyIso), dias = Math.round((Date.UTC(p.y, p.m - 1, p.d) - Date.UTC(h.y, h.m - 1, h.d)) / 864e5);
+    const cuenta = dias <= 0 ? "Hoy" : dias === 1 ? "Mañana" : `Dentro de ${dias} días`;
+    const cancelada = c && c.estado === "cancelada";
+    const chip = cancelada ? '<span class="chip err">Clase cancelada</span>' : m.estado === "espera" ? '<span class="chip warn">En lista de espera</span>' : '<span class="chip ok">Plaza confirmada</span>';
+    const cal = c && !cancelada && m.estado !== "espera" ? urlsCalendario({ fecha: m.fecha, inicio: c.inicio, fin: c.fin, lugar: c.lugar }) : null;
+    return `<article class="proxima aparece" aria-label="Tu próxima clase">
+      <div class="pr-fecha" aria-hidden="true"><span class="dow">${DIAS_C[p.dow]}</span><span class="num">${p.d}</span><span class="mes">${MESES[p.m - 1].slice(0, 3)}</span></div>
+      <div><p class="pr-eyebrow">Tu próxima clase · <span class="cuenta">${cuenta}</span></p><h3>${esc(capital(fechaLarga(m.fecha)))}</h3>
+      <p class="pr-det">${chip}${c ? `${c.inicio}–${c.fin}${c.lugar ? " · " + esc(c.lugar) : ""}` : ""}${cancelada && c.nota ? " · " + esc(c.nota) : ""}</p></div>
+      <div class="pr-acc">
+        <a class="btn primary peq" href="?reserva=${encodeURIComponent(m.clave)}">Ver o cancelar</a>
+        ${cal ? `<a class="btn secondary peq" href="${cal.google}" target="_blank" rel="noopener">Añadir a Google Calendar</a><a class="btn secondary peq" href="${cal.ics}" download="clase-vuelo-${m.fecha}.ics">Apple, Outlook… (.ics)</a>` : ""}
+      </div>
+    </article>`;
   }
   async function comprobarMias() {
     // Quita de la lista las reservas que ya no están activas (canceladas desde otro sitio).
@@ -826,8 +891,7 @@
     }
     return new Date(t);
   }
-  function enlacesCalendario(r) {
-    if (!r || !r.inicio || !r.fin) return "";
+  function urlsCalendario(r) {
     const z = (dt) => dt.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
     const ini = z(madridAUtc(r.fecha, r.inicio)), fin = z(madridAUtc(r.fecha, r.fin));
     const titulo = "Clase de vuelo · UCA&Air", lugar = r.lugar || "";
@@ -837,7 +901,11 @@
       "UID:" + r.fecha + "-" + (r.numero || "clase") + "@ucanair", "DTSTAMP:" + z(new Date()), "DTSTART:" + ini, "DTEND:" + fin,
       "SUMMARY:" + escIcs(titulo), lugar ? "LOCATION:" + escIcs(lugar) : "", "DESCRIPTION:" + escIcs("Clase de vuelo con doble mando."),
       "BEGIN:VALARM", "TRIGGER:-PT12H", "ACTION:DISPLAY", "DESCRIPTION:" + escIcs(titulo), "END:VALARM", "END:VEVENT", "END:VCALENDAR"].filter(Boolean).join("\r\n");
-    const url = "data:text/calendar;charset=utf-8," + encodeURIComponent(ics);
+    return { google: g, ics: "data:text/calendar;charset=utf-8," + encodeURIComponent(ics) };
+  }
+  function enlacesCalendario(r) {
+    if (!r || !r.inicio || !r.fin) return "";
+    const { google: g, ics: url } = urlsCalendario(r);
     return `<div class="calendario-botones">
         <span class="ayuda">Añadir a tu calendario:</span>
         <a class="btn secondary peq" href="${g}" target="_blank" rel="noopener">Google Calendar</a>
@@ -1174,6 +1242,19 @@
   $("ver-lista").addEventListener("click", () => cambiarVista("lista"));
   $("ver-cal").addEventListener("click", () => cambiarVista("cal"));
 
+  const ETIQUETAS = ["Despegue", "Aterrizaje", "Virajes", "Vuelo nivelado", "Circuito", "Pasadas", "Vuela casi solo", "Repasar en simulador"];
+  const fmtMin = (m) => (m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? " " + (m % 60) + " min" : ""}`);
+  const ICONOS = {
+    viento: '<path d="M3 8h10a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7"/>',
+    lluvia: '<path d="M7 14a4 4 0 0 1-.5-7.97A6 6 0 0 1 18 6.5a3.5 3.5 0 0 1-.5 7.5H7z"/><path d="M8 17l-1 3M12 17l-1 3M16 17l-1 3"/>',
+    tormenta: '<path d="M7 14a4 4 0 0 1-.5-7.97A6 6 0 0 1 18 6.5a3.5 3.5 0 0 1-.5 7.5H7z"/><path d="M12.5 14l-2.5 4h4l-2.5 4"/>',
+    niebla: '<path d="M7 11a4 4 0 0 1-.5-7.97A6 6 0 0 1 18 3.5"/><path d="M3 14h18M5 18h14M8 22h8"/>',
+    calor: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    otro: '<path d="M7 18a4 4 0 0 1-.5-7.97A6 6 0 0 1 18 10.5a3.5 3.5 0 0 1-.5 7.5H7z"/>',
+  };
+  const icono = (k, cls) => `<svg class="${cls || ""}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONOS[k]}</svg>`;
+  const METEO = [["viento", "Viento", "Suspendida por viento fuerte."], ["lluvia", "Lluvia", "Suspendida por lluvia."], ["tormenta", "Tormenta", "Suspendida por riesgo de tormenta."], ["niebla", "Niebla", "Suspendida por niebla o poca visibilidad."], ["calor", "Calor", "Suspendida por calor extremo."], ["otro", "Otro", "Suspendida por la meteorología."]];
+
   function personaAdmin(r, activa, editable, c) {
     const tel = r.telefono.replace(/\s/g, "");
     const hoyIso = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
@@ -1194,10 +1275,17 @@
         <button type="button" data-abrir="${pid}" aria-expanded="false" aria-controls="${pid}">Anotar progreso</button>
       </span>
       <form class="caja" id="${pid}" data-progreso="${esc(r.numero)}" data-nombre="${esc(r.nombre)}" hidden novalidate action="javascript:void 0">
-        <div class="dos">
-          <div class="campo"><label for="h-${pid}">Horas voladas hoy</label><input id="h-${pid}" name="horas" type="text" inputmode="decimal" placeholder="0,5" maxlength="5" autocomplete="off"><small class="aviso" data-aviso="horas"></small></div>
-          <div class="campo"><label for="n-${pid}">Nota del instructor</label><input id="n-${pid}" name="nota" type="text" maxlength="300" placeholder="Ej.: despega solo, le cuesta el viraje" autocomplete="off"><small class="aviso" data-aviso="nota"></small></div>
+        <div class="campo slider-campo">
+          <label for="h-${pid}">Tiempo de vuelo hoy <output for="h-${pid}">30 min</output></label>
+          <input id="h-${pid}" name="minutos" type="range" min="0" max="180" step="15" value="30" aria-valuetext="30 minutos">
+          <div class="marcas" aria-hidden="true"><span>0</span><span>1 h</span><span>2 h</span><span>3 h</span></div>
+          <small class="aviso" data-aviso="horas"></small>
         </div>
+        <div class="campo">
+          <span class="ayuda">Qué ha practicado (toca para añadir)</span>
+          <div class="etiquetas">${ETIQUETAS.map((t) => `<button type="button" data-etiqueta="${esc(t)}" aria-pressed="false">${esc(t)}</button>`).join("")}</div>
+        </div>
+        <div class="campo"><label for="n-${pid}">Nota del instructor (opcional)</label><input id="n-${pid}" name="nota" type="text" maxlength="300" placeholder="Ej.: le cuesta el viraje a la izquierda" autocomplete="off"><small class="aviso" data-aviso="nota"></small></div>
         <small class="aviso" data-aviso="general" role="alert"></small>
         <button class="btn primary" type="submit">Guardar progreso</button>
       </form>` : ""}
@@ -1248,7 +1336,7 @@
         ${editable ? `<div class="adm-botones">
           ${!c.sinClase && c.estado !== "cancelada" ? `<button type="button" class="btn secondary peq" data-abrir="apuntar-${id}" aria-expanded="false" aria-controls="apuntar-${id}">Apuntar a alguien</button>` : ""}
           <button type="button" class="btn secondary peq" data-abrir="editar-${id}" aria-expanded="false" aria-controls="editar-${id}">Editar este día</button>
-          ${!c.sinClase && c.estado !== "cancelada" && !c.empezada ? `<button type="button" class="btn secondary peq" data-meteo="${c.fecha}">Cancelar por meteo</button>` : ""}
+          ${!c.sinClase && c.estado !== "cancelada" && !c.empezada ? `<button type="button" class="btn secondary peq" data-abrir="meteo-${id}" aria-expanded="false" aria-controls="meteo-${id}">${icono("lluvia", "ico")}Cancelar por meteo</button>` : ""}
         </div>
         <form class="caja" id="apuntar-${id}" data-apuntar="${c.fecha}" hidden novalidate action="javascript:void 0">
           <p class="subt">Apuntar a alguien</p>
@@ -1284,21 +1372,30 @@
           ${tipoActual === "cancelada" ? '<p class="ayuda">Si la vuelves a poner en marcha, las reservas que había vuelven a como estaban y se avisa a cada persona.</p>' : ""}
           <div class="solo-cambio" ${tipoActual === "cambio" ? "" : "hidden"} style="display:grid;gap:12px">
             <div class="dos">
-              <div class="campo"><label for="ei-${id}">Hora de inicio</label><input id="ei-${id}" name="inicio" type="text" inputmode="text" autocomplete="off" placeholder="${esc(ADM.datos.base.inicio)}" value="${esc(e.inicio || "")}" maxlength="5"><small class="aviso" data-aviso="inicio"></small></div>
-              <div class="campo"><label for="ef-${id}">Hora de fin</label><input id="ef-${id}" name="fin" type="text" inputmode="text" autocomplete="off" placeholder="${esc(ADM.datos.base.fin)}" value="${esc(e.fin || "")}" maxlength="5"><small class="aviso" data-aviso="fin"></small></div>
+              <div class="campo"><label for="ei-${id}">Hora de inicio</label><input id="ei-${id}" name="inicio" type="time" step="900" value="${esc(e.inicio || ADM.datos.base.inicio)}"><small class="aviso" data-aviso="inicio"></small></div>
+              <div class="campo"><label for="ef-${id}">Hora de fin</label><input id="ef-${id}" name="fin" type="time" step="900" value="${esc(e.fin || ADM.datos.base.fin)}"><small class="aviso" data-aviso="fin"></small></div>
             </div>
             <div class="campo"><label for="el-${id}">Lugar ese día</label><input id="el-${id}" name="lugar" type="text" autocomplete="off" placeholder="${esc(ADM.datos.base.lugar || "")}" value="${esc(e.lugar || "")}" maxlength="120"><small class="aviso" data-aviso="lugar"></small></div>
             <div class="campo"><label for="ep-${id}">Instructores ese día, separados por comas</label><input id="ep-${id}" name="pilotos" type="text" placeholder="${esc(ADM.datos.base.pilotos)}" value="${esc(e.pilotos || "")}" maxlength="300"><small class="aviso" data-aviso="pilotos"></small></div>
             <div class="dos">
-              <div class="campo"><label for="ex-${id}">Plazas extra (+ o −)</label><input id="ex-${id}" name="extra" type="text" inputmode="text" autocomplete="off" placeholder="0" value="${esc(e.extra ? String(e.extra) : "")}" maxlength="4"><small class="aviso" data-aviso="extra"></small></div>
+              <div class="campo"><label for="ex-${id}">Plazas extra (aviones, baterías…)</label><div class="paso"><button type="button" data-paso="-1" aria-label="Una plaza menos">−</button><input id="ex-${id}" name="extra" type="text" inputmode="numeric" autocomplete="off" value="${esc(e.extra ? String(e.extra) : "0")}" maxlength="4"><button type="button" data-paso="1" aria-label="Una plaza más">+</button></div><small class="aviso" data-aviso="extra"></small></div>
               <div class="campo"><label for="et-${id}">Plazas totales (opcional)</label><input id="et-${id}" name="plazas" type="text" inputmode="numeric" placeholder="automático" value="${esc(e.plazas === "" || e.plazas == null ? "" : String(e.plazas))}" maxlength="3"><small class="aviso" data-aviso="plazas"></small></div>
             </div>
-            <p class="ayuda">Plazas = instructores × ${ADM.datos.base.plazasPorInstructor}${ADM.datos.base.ayudante ? ` (+ ${ADM.datos.base.masConAyudante} si viene ${esc(ADM.datos.base.ayudante)})` : ""} + extra (por aviones, baterías…). Si pones plazas totales, mandan sobre lo demás. Deja en blanco lo que no cambie.</p>
+            <p class="ayuda">Plazas = instructores × ${ADM.datos.base.plazasPorInstructor}${ADM.datos.base.ayudante ? ` (+ ${ADM.datos.base.masConAyudante} si viene ${esc(ADM.datos.base.ayudante)})` : ""} + extra (por aviones, baterías…). Si pones plazas totales, mandan sobre lo demás.</p>
           </div>
           <div class="campo"><label for="en-${id}">Nota para la web y los correos (opcional)</label><input id="en-${id}" name="nota" type="text" maxlength="200" value="${esc(e.nota || "")}"></div>
           <small class="aviso" data-aviso="general" role="alert"></small>
           <button class="btn primary" type="submit">Guardar este día</button>
-        </form>` : ""}
+        </form>
+        ${!c.sinClase && c.estado !== "cancelada" && !c.empezada ? `<form class="caja" id="meteo-${id}" data-meteo="${c.fecha}" hidden novalidate action="javascript:void 0">
+          <fieldset class="meteo-opc"><legend>¿Qué tiempo hace?</legend>
+            ${METEO.map(([k, t], i) => `<label><input type="radio" name="motivo" value="${k}" ${i === 0 ? "checked" : ""}>${icono(k)}${t}</label>`).join("")}
+          </fieldset>
+          <div class="campo"><label for="md-${id}">Añadir algo (opcional)</label><input id="md-${id}" name="detalle" type="text" maxlength="120" placeholder="Ej.: rachas de 40 km/h" autocomplete="off"></div>
+          <p class="ayuda">${(() => { const n = c.reservas.filter((r) => r.estado === "Confirmada" || r.estado === "Lista de espera").length; return n ? `Se avisará por correo a ${n} persona${n === 1 ? "" : "s"}.` : "No hay nadie apuntado todavía."; })()} Si mejora el tiempo, se puede volver a poner en marcha y las reservas se recuperan.</p>
+          <small class="aviso" data-aviso="general" role="alert"></small>
+          <button class="btn primary peligro" type="submit">Cancelar la clase</button>
+        </form>` : ""}` : ""}
       </div>
     </details>`;
   }
@@ -1338,17 +1435,15 @@
       admCargar();
       return;
     }
-    const meteo = ev.target.closest("[data-meteo]");
-    if (meteo) {
-      const fecha = meteo.dataset.meteo, c = ADM.datos.clases.find((x) => x.fecha === fecha);
-      const n = c ? c.reservas.filter((r) => r.estado === "Confirmada" || r.estado === "Lista de espera").length : 0;
-      const motivo = prompt(`Se cancelará la clase del ${fechaLarga(fecha)}${n ? ` y se avisará por correo a ${n} persona${n === 1 ? "" : "s"}` : ""}. Motivo que verán:`, "Suspendida por la meteorología (viento o lluvia).");
-      if (motivo === null) return;
-      meteo.disabled = true; meteo.textContent = "Cancelando…";
-      const r = await admPedir({ accion: "adminDia", fecha, tipo: "cancelada", nota: motivo || "Suspendida por la meteorología." }, { reintentos: 1 });
-      if (!r.ok) { if (r.codigo !== "sesion") { alert(r.error); meteo.disabled = false; meteo.textContent = "Cancelar por meteo"; } return; }
-      ADM.mensaje = { fecha, texto: "Clase cancelada por meteo." + (r.avisados ? ` Se ha avisado a ${r.avisados} persona${r.avisados === 1 ? "" : "s"}.` : "") + " Si mejora el tiempo, edita el día y vuelve a ponerla en marcha: las reservas se recuperan." };
-      admCargar();
+    const etq = ev.target.closest("[data-etiqueta]");
+    if (etq) {
+      const on = etq.getAttribute("aria-pressed") !== "true"; etq.setAttribute("aria-pressed", String(on));
+      return;
+    }
+    const paso = ev.target.closest("[data-paso]");
+    if (paso) {
+      const inp = paso.parentElement.querySelector("input"), v = parseInt(String(inp.value).replace("−", "-"), 10) || 0;
+      inp.value = String(Math.max(-20, Math.min(20, v + Number(paso.dataset.paso))));
       return;
     }
     const quitar = ev.target.closest("[data-quitar]");
@@ -1362,6 +1457,13 @@
       admCargar();
     }
   });
+  $("adm-lista").addEventListener("input", (ev) => {
+    if (ev.target.type === "range" && ev.target.name === "minutos") {
+      const m = Number(ev.target.value), o = ev.target.form.querySelector("output");
+      if (o) o.textContent = m ? fmtMin(m) : "No ha volado";
+      ev.target.setAttribute("aria-valuetext", m ? fmtMin(m) : "0, no ha volado");
+    }
+  });
   $("adm-lista").addEventListener("change", (ev) => {
     if (ev.target.name === "tipo") { const f = ev.target.form; f.querySelector(".solo-cambio").hidden = ev.target.value !== "cambio"; }
   });
@@ -1373,14 +1475,26 @@
     const ocupado = (si) => { boton.disabled = si; boton.textContent = si ? "Guardando…" : textoBoton; };
     if (f.dataset.progreso) {
       const fecha = f.closest("details.adm").dataset.fecha;
-      const horas = f.elements.horas.value.trim(), nota = limpiar(f.elements.nota.value);
-      if (horas && !/^\d{1,2}([.,]\d{1,2})?$/.test(horas)) { aviso("horas", "Escribe un número, p. ej. 0,5"); f.elements.horas.focus(); return; }
-      if (!horas && !nota) { aviso("nota", "Escribe una nota o las horas voladas."); f.elements.nota.focus(); return; }
+      const min = Number(f.elements.minutos.value) || 0, horas = min ? String(Math.round((min / 60) * 100) / 100) : "";
+      const tags = [...f.querySelectorAll("[data-etiqueta][aria-pressed=true]")].map((b) => b.dataset.etiqueta);
+      const nota = limpiar([tags.join(", "), limpiar(f.elements.nota.value)].filter(Boolean).join(". ")).slice(0, 300);
+      if (!horas && !nota) { aviso("nota", "Pon el tiempo de vuelo, toca lo que ha practicado o escribe una nota."); f.elements.minutos.focus(); return; }
       ocupado(true);
       const r = await admPedir({ accion: "adminProgreso", numero: f.dataset.progreso, horas, nota }, { reintentos: 1 });
       ocupado(false);
       if (!r.ok) { if (r.campos) Object.entries(r.campos).forEach(([k, t]) => aviso(k, t)); else if (r.codigo !== "sesion") aviso("general", r.error); return; }
       ADM.mensaje = { fecha, texto: `Progreso de ${f.dataset.nombre} guardado: ${String(r.horas).replace(".", ",")} h de vuelo en total.` };
+      admCargar();
+      return;
+    }
+    if (f.dataset.meteo) {
+      const fecha = f.dataset.meteo, k = (f.querySelector("input[name=motivo]:checked") || {}).value || "otro";
+      const base = (METEO.find((x) => x[0] === k) || METEO[5])[2], det = limpiar(f.elements.detalle.value);
+      ocupado(true);
+      const r = await admPedir({ accion: "adminDia", fecha, tipo: "cancelada", nota: (det ? base.replace(/\.$/, "") + ": " + det : base).slice(0, 200) }, { reintentos: 1 });
+      ocupado(false);
+      if (!r.ok) { if (r.codigo !== "sesion") aviso("general", r.error); return; }
+      ADM.mensaje = { fecha, texto: "Clase cancelada por meteo." + (r.avisados ? ` Se ha avisado a ${r.avisados} persona${r.avisados === 1 ? "" : "s"}.` : "") + " Si mejora el tiempo, edita el día y vuelve a ponerla en marcha: las reservas se recuperan." };
       admCargar();
       return;
     }
@@ -1412,6 +1526,11 @@
       if (plazasNuevas !== "" && Number(plazasNuevas) < confirmadas && !confirm(`Hay ${confirmadas} apuntados y dejas ${plazasNuevas} plazas. Nadie se da de baja solo: quita tú a quien sobre. ¿Guardar?`)) return;
       const datosDia = { accion: "adminDia", fecha, tipo, nota: f.elements.nota.value };
       if (tipo === "cambio") ["inicio", "fin", "pilotos", "extra", "plazas", "lugar"].forEach((k) => (datosDia[k] = f.elements[k].value.trim().replace("−", "-")));
+      if (tipo === "cambio") { // la hora habitual no se guarda como cambio
+        if (datosDia.inicio === ADM.datos.base.inicio) datosDia.inicio = "";
+        if (datosDia.fin === ADM.datos.base.fin) datosDia.fin = "";
+        if (datosDia.extra === "0") datosDia.extra = "";
+      }
       ocupado(true);
       const r = await admPedir(datosDia, { reintentos: 1 });
       ocupado(false);
