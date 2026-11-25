@@ -5,9 +5,9 @@
 //  (termina en /exec). Mientras esté vacía, la página funciona
 //  en MODO DE PRUEBA con datos inventados y no guarda nada.
 //
-//  Si la cambias, sube el número de «config.js?v=1» en
+//  Si la cambias, sube el número de «config.js?v=2» en
 //  index.html para que nadie se quede con la versión vieja.
 // ─────────────────────────────────────────────────────────────
 window.CONFIG = {
-  api: "",
+  api: "https://script.google.com/macros/s/AKfycbyR5blFW-_nkSLGIbiVf85gL6SU0xBbBroKwgsSMe2hzDiqzOJcKPxqKyTOeRxbODn1/exec",
 };
