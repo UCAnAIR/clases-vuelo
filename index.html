@@ -196,15 +196,21 @@
   .nivel { border: 0; padding: 0; margin: 14px 0 0; min-width: 0; }
   .nivel legend { font-size: 15px; color: var(--muted); padding: 0; margin-bottom: 2px; }
   .nivel .ayuda { margin-bottom: 8px; }
-  .nivel .tres { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .nivel label { position: relative; display: flex; align-items: center; justify-content: center; min-height: 48px; padding: 8px 6px; text-align: center;
+  .nivel .tres { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .sim-detalle { display: grid; gap: 5px; margin-top: 12px; }
+  .sim-detalle textarea { min-height: 84px; resize: vertical; line-height: 1.4; }
+  .contador { font-size: 13px; color: var(--muted); justify-self: end; }
+  textarea[aria-invalid="true"] { border-color: var(--err); }
+  .nivel .tres label { position: relative; display: flex; align-items: center; justify-content: center; min-height: 48px; padding: 8px 6px; text-align: center;
     border: 1px solid var(--input-line); border-radius: 10px; background: var(--field); color: var(--ink); cursor: pointer; font-size: 15px; line-height: 1.2; }
-  .nivel label:hover { border-color: var(--ink); }
+  .nivel .tres label:hover { border-color: var(--ink); }
   .nivel input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
-  .nivel label:has(input:checked) { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); font-weight: 600; }
-  .nivel label:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
-  .nivel[aria-invalid="true"] label { border-color: var(--err); }
+  .nivel .tres label:has(input:checked) { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); font-weight: 600; }
+  .nivel .tres label:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .nivel[aria-invalid="true"] .tres label { border-color: var(--err); }
   .chip.sim { background: var(--accent-soft); color: var(--accent); }
+  .gente .sim-txt { grid-column: 1 / -1; font-size: 15px; color: var(--ink); background: var(--field); border-radius: 8px; padding: 8px 10px; margin-top: 4px; overflow-wrap: anywhere; }
+  .gente .sim-txt b { color: var(--muted); font-weight: 600; }
   .login { max-width: 440px; margin: 0 auto; }
 </style>
 </head>
@@ -277,14 +283,19 @@
             </div>
           </div>
           <fieldset class="nivel" id="simulador" aria-describedby="ayuda-simulador aviso-simulador">
-            <legend>Experiencia con el simulador</legend>
+            <legend>¿Has usado el simulador?</legend>
             <p class="ayuda" id="ayuda-simulador">Así el instructor sabe por dónde empezar.</p>
             <div class="tres">
-              <label><input type="radio" name="simulador" value="nunca"> Nunca</label>
-              <label><input type="radio" name="simulador" value="poco"> Un poco</label>
-              <label><input type="radio" name="simulador" value="bastante"> Bastante</label>
+              <label><input type="radio" name="simulador" value="si"> Sí</label>
+              <label><input type="radio" name="simulador" value="no"> No</label>
             </div>
             <small class="aviso" id="aviso-simulador"></small>
+            <div class="sim-detalle" id="sim-detalle" hidden>
+              <label for="simuladorTexto">¿Qué eres capaz de hacer con él?</label>
+              <textarea id="simuladorTexto" name="simuladorTexto" maxlength="300" rows="3" placeholder="Ej.: despego y aterrizo solo, hago circuitos, todavía me cuestan los virajes…" aria-describedby="aviso-simuladorTexto"></textarea>
+              <small class="contador" id="contador-sim" aria-hidden="true">0/300</small>
+              <small class="aviso" id="aviso-simuladorTexto"></small>
+            </div>
           </fieldset>
           <div class="trampa" aria-hidden="true"><label>Web <input id="web" type="text" tabindex="-1" autocomplete="off"></label></div>
           <label class="check"><input type="checkbox" id="recordar" checked> Recordar mis datos en este dispositivo</label>
@@ -402,7 +413,8 @@
       if (!/^[a-z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*\.[a-z]{2,}$/.test(s) || /\.\.|^\.|\.@/.test(s)) return "Ese correo no parece válido. Revísalo (p. ej. nombre@gmail.com).";
       return "";
     },
-    simulador(v) { return ["nunca", "poco", "bastante"].includes(v) ? "" : "Elige una opción."; },
+    simulador(v) { return v === "si" || v === "no" ? "" : "Dinos si has usado el simulador."; },
+    simuladorTexto(v, usado) { if (usado !== "si") return ""; const t = limpiar(v); return t.length < 3 ? "Cuéntanos qué sabes hacer con el simulador." : t.length > 300 ? "Máximo 300 caracteres." : ""; },
     telefono(v) {
       let s = limpiar(v).replace(/[\s.\-()\/]/g, "");
       if (!s) return "Escribe tu teléfono.";
@@ -595,8 +607,17 @@
 
   // ── Perfil (datos recordados) ───────────────────────────────
   const simElegido = () => (document.querySelector("#simulador input:checked") || {}).value || "";
-  function ponerSim(v) { document.querySelectorAll("#simulador input").forEach((i) => (i.checked = i.value === v)); }
-  document.querySelectorAll("#simulador input").forEach((i) => i.addEventListener("change", () => { ponerAviso("simulador", ""); idPeticion = idUnico(); }));
+  function mostrarDetalleSim() {
+    const si = simElegido() === "si";
+    $("sim-detalle").hidden = !si;
+    $("contador-sim").textContent = $("simuladorTexto").value.length + "/300";
+  }
+  function ponerSim(v, texto) { document.querySelectorAll("#simulador input").forEach((i) => (i.checked = i.value === v)); $("simuladorTexto").value = texto || ""; mostrarDetalleSim(); }
+  document.querySelectorAll("#simulador input").forEach((i) => i.addEventListener("change", () => {
+    ponerAviso("simulador", ""); idPeticion = idUnico(); mostrarDetalleSim();
+    if (i.value === "si" && i.checked && !$("simuladorTexto").value) $("simuladorTexto").focus();
+  }));
+  $("simuladorTexto").addEventListener("input", () => { idPeticion = idUnico(); mostrarDetalleSim(); if ($("simuladorTexto").getAttribute("aria-invalid") === "true") ponerAviso("simuladorTexto", validar.simuladorTexto($("simuladorTexto").value, "si")); });
   function pintarPerfil() {
     const hay = !!(perfil && perfil.nombre && perfil.correo && perfil.telefono);
     $("perfil").hidden = !hay; $("campos").hidden = hay;
@@ -605,7 +626,7 @@
       $("perfil-datos").textContent = perfil.correo + " · " + perfil.telefono;
       $("nombre").value = perfil.nombre; $("correo").value = perfil.correo; $("telefono").value = perfil.telefono;
     }
-    if (perfil && perfil.simulador) ponerSim(perfil.simulador);
+    if (perfil && (perfil.simulador === "si" || perfil.simulador === "no")) ponerSim(perfil.simulador, perfil.simuladorTexto);
     $("recordar").checked = hay || guardado.leer("recordar", true) !== false;
   }
   $("perfil-cambiar").addEventListener("click", () => {
@@ -615,7 +636,7 @@
     perfil = null; guardado.quitar("perfil");
     mias = []; guardado.poner("misReservas", []);
     ["nombre", "correo", "telefono"].forEach((k) => { $(k).value = ""; ponerAviso(k, ""); });
-    ponerSim(""); ponerAviso("simulador", "");
+    ponerSim("", ""); ponerAviso("simulador", ""); ponerAviso("simuladorTexto", "");
     $("perfil").hidden = true; $("campos").hidden = false;
     if (datos) { pintarMias(); pintarCalendario(); }
     $("nombre").focus();
@@ -628,7 +649,7 @@
   // ── Formulario de reserva ───────────────────────────────────
   function ponerAviso(campo, texto) {
     const a = $("aviso-" + campo); if (a) a.textContent = texto || "";
-    const i = $(campo); if (i && (i.tagName === "INPUT" || i.tagName === "FIELDSET")) i.setAttribute("aria-invalid", texto ? "true" : "false");
+    const i = $(campo); if (i && (i.tagName === "INPUT" || i.tagName === "FIELDSET" || i.tagName === "TEXTAREA")) i.setAttribute("aria-invalid", texto ? "true" : "false");
   }
   ["nombre", "correo", "telefono"].forEach((k) => {
     const i = $(k);
@@ -648,9 +669,11 @@
     const c = claseElegida();
     if (!c) return;
     const valores = { nombre: limpiar($("nombre").value), correo: limpiar($("correo").value).replace(/\s/g, "").toLowerCase(), telefono: limpiar($("telefono").value), simulador: simElegido() };
+    valores.simuladorTexto = valores.simulador === "si" ? limpiar($("simuladorTexto").value) : "";
     let primeroMal = null;
-    for (const k of Object.keys(valores)) { const e = validar[k](valores[k]); ponerAviso(k, e); if (e && !primeroMal) primeroMal = k; }
+    for (const k of Object.keys(valores)) { const e = validar[k](valores[k], valores.simulador); ponerAviso(k, e); if (e && !primeroMal) primeroMal = k; }
     if (primeroMal === "simulador") { $("simulador").querySelector("input").focus(); return; }
+    if (primeroMal === "simuladorTexto") { $("simuladorTexto").focus(); return; }
     if (primeroMal) { $("perfil").hidden = true; $("campos").hidden = false; $(primeroMal).focus(); return; }
     ponerAviso("general", "");
     const estabaAbierta = c.estado === "abierta";
@@ -660,7 +683,7 @@
     clearTimeout(lento);
     enviando = false;
     if (!r.ok) {
-      if (r.campos && Object.keys(r.campos).some((k) => k !== "simulador")) {
+      if (r.campos && Object.keys(r.campos).some((k) => !k.startsWith("simulador"))) {
         $("perfil").hidden = true; $("campos").hidden = false;
       }
       if (r.campos) {
@@ -674,7 +697,7 @@
       return;
     }
     // Éxito
-    if ($("recordar").checked) { perfil = { nombre: r.nombre, correo: r.correo, telefono: r.telefono, simulador: valores.simulador }; guardado.poner("perfil", perfil); }
+    if ($("recordar").checked) { perfil = { nombre: r.nombre, correo: r.correo, telefono: r.telefono, simulador: valores.simulador, simuladorTexto: valores.simuladorTexto }; guardado.poner("perfil", perfil); }
     if (!$("recordar").checked) { mias = []; } // en un dispositivo que no recuerda datos tampoco se guardan reservas
     else mias = mias.filter((m) => !(m.fecha === r.fecha && m.correo === r.correo)).concat([{ fecha: r.fecha, clave: r.clave, estado: r.estado, correo: r.correo }]);
     guardado.poner("misReservas", mias);
@@ -778,22 +801,22 @@
       if (f.getDay() !== 6) continue;
       const iso = f.toLocaleDateString("sv-SE");
       const n = clases.length;
-      const base = [1, 3, 0, 2, 0, 0][n];
+      const base = [1, 4, 0, 2, 0, 0][n];
       const ocup = base + demoBD.reservas.filter((r) => r.fecha === iso && r.estado === "confirmada").length;
-      const plazas = n === 3 ? 6 : 3;
+      const plazas = n === 3 ? 8 : 4;
       const est = n === 4 ? "cancelada" : ocup >= plazas ? "espera" : "abierta";
       const cierre = new Date(f.getFullYear(), f.getMonth(), f.getDate(), -2).toISOString();
       clases.push({ fecha: iso, inicio: "10:00", fin: "13:00", plazas, ocupadas: Math.min(ocup, plazas), enEspera: n === 1 ? 1 : 0, estado: est,
         pilotos: n === 3 ? ["Fabio Fernández Ruiz", "Otro instructor"] : ["Fabio Fernández Ruiz"], nota: n === 4 ? "Previsión de viento fuerte" : n === 3 ? "Dos instructores: más plazas" : "", cierre });
     }
-    if (d.accion === "clases") return { ok: true, clases, lugar: "", aviso: "", cierreHoras: 12, maximo: 2, listaEspera: true };
+    if (d.accion === "clases") return { ok: true, clases, lugar: "", aviso: "", cierreHoras: 12, maximo: 1, listaEspera: true };
     if (d.accion === "reservar") {
       const c = clases.find((x) => x.fecha === d.fecha);
       if (demoBD.reservas.some((r) => r.fecha === d.fecha && r.correo === d.correo)) return { ok: false, error: "Ya tienes plaza en esa clase." };
       const estado = c.estado === "espera" ? "espera" : "confirmada";
       const clave = Array.from({ length: 40 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
       const nombre = limpiar(d.nombre).split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
-      if (!["nunca", "poco", "bastante"].includes(d.simulador)) return { ok: false, error: "Revisa los datos marcados.", campos: { simulador: "Elige una opción." } };
+      if (d.simulador !== "si" && d.simulador !== "no") return { ok: false, error: "Revisa los datos marcados.", campos: { simulador: "Dinos si has usado el simulador." } };
       demoBD.reservas.push({ fecha: d.fecha, correo: d.correo, estado, clave, nombre, telefono: d.telefono, simulador: d.simulador });
       return { ok: true, estado, posicion: estado === "espera" ? 2 : 0, fecha: d.fecha, inicio: c.inicio, fin: c.fin, clave, nombre, correo: d.correo, telefono: d.telefono, correoEnviado: true };
     }
@@ -906,9 +929,10 @@
   function personaAdmin(r, activa, editable) {
     const tel = r.telefono.replace(/\s/g, "");
     return `<li class="${activa ? "" : "inactiva"}">
-      <span class="nom">${esc(r.nombre)}${r.simulador ? ` <span class="chip sim" title="Experiencia con el simulador">Simulador: ${esc(r.simulador.toLowerCase())}</span>` : ""}${activa ? "" : ` <span class="chip">${esc(r.estado)}</span>`}</span>
+      <span class="nom">${esc(r.nombre)}${r.simulador && !/^sí:/i.test(r.simulador) ? ` <span class="chip sim" title="¿Ha usado el simulador?">Simulador: ${esc(r.simulador.toLowerCase())}</span>` : ""}${activa ? "" : ` <span class="chip">${esc(r.estado)}</span>`}</span>
       <span class="acc">${activa && editable ? `<button type="button" class="btn secondary peq" data-quitar="${esc(r.numero)}" data-nombre="${esc(r.nombre)}">Quitar</button>` : ""}</span>
       <span class="con"><a href="tel:${esc(tel)}">${esc(r.telefono)}</a> · <a href="mailto:${esc(r.correo)}">${esc(r.correo)}</a></span>
+      ${r.simulador && /^sí:/i.test(r.simulador) ? `<span class="sim-txt"><b>Simulador:</b> ${esc(r.simulador.replace(/^sí:\s*/i, ""))}</span>` : ""}
     </li>`;
   }
 
@@ -946,11 +970,11 @@
             <div class="campo"><label for="ac-${id}">Correo</label><input id="ac-${id}" name="correo" type="email" inputmode="email" autocomplete="off" spellcheck="false" autocapitalize="off" maxlength="120"><small class="aviso" data-aviso="correo"></small></div>
             <div class="campo"><label for="at-${id}">Teléfono</label><input id="at-${id}" name="telefono" type="tel" inputmode="tel" autocomplete="off" maxlength="25"><small class="aviso" data-aviso="telefono"></small></div>
           </div>
-          <fieldset class="opciones"><legend>Experiencia con el simulador (opcional)</legend>
-            <label><input type="radio" name="simulador" value="nunca"> Nunca</label>
-            <label><input type="radio" name="simulador" value="poco"> Un poco</label>
-            <label><input type="radio" name="simulador" value="bastante"> Bastante</label>
+          <fieldset class="opciones"><legend>¿Ha usado el simulador? (opcional)</legend>
+            <label><input type="radio" name="simulador" value="si"> Sí</label>
+            <label><input type="radio" name="simulador" value="no"> No</label>
           </fieldset>
+          <div class="campo"><label for="as-${id}">Qué sabe hacer con el simulador (opcional)</label><input id="as-${id}" name="simuladorTexto" type="text" autocomplete="off" maxlength="300"><small class="aviso" data-aviso="simuladorTexto"></small></div>
           <label class="check"><input type="checkbox" name="avisar" checked> Enviarle el correo de confirmación con su enlace para cancelar</label>
           <p class="ayuda">No cuenta el máximo por persona ni el cierre de reservas.</p>
           <small class="aviso" data-aviso="general" role="alert"></small>
@@ -1017,6 +1041,7 @@
       let mal = false; for (const k of Object.keys(v)) { const e = validar[k](v[k]); aviso(k, e); if (e && !mal) { mal = true; f.elements[k].focus(); } }
       if (mal) return;
       v.simulador = (f.querySelector("input[name=simulador]:checked") || {}).value || "";
+      v.simuladorTexto = v.simulador === "si" ? limpiar(f.elements.simuladorTexto.value) : "";
       ocupado(true);
       let r = await admPedir({ accion: "adminApuntar", fecha, ...v, avisar: f.elements.avisar.checked }, { reintentos: 1 });
       if (!r.ok && r.codigo === "llena" && confirm(r.error)) r = await admPedir({ accion: "adminApuntar", fecha, ...v, avisar: f.elements.avisar.checked, forzar: true }, { reintentos: 1 });
