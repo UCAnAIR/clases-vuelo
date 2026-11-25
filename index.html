@@ -146,6 +146,24 @@
   .resultado .icono.no { background: var(--err-soft); color: var(--err); }
   .resultado p { margin: 0 0 12px; }
   .acciones { display: grid; gap: 10px; margin-top: 16px; }
+  .calendario-botones { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+  .calendario-botones .ayuda { flex-basis: 100%; }
+  .calendario-botones .btn { text-decoration: none; text-align: center; flex: 1 1 140px; }
+  .asis { display: flex; gap: 6px; flex-wrap: wrap; grid-column: 1 / -1; margin-top: 6px; align-items: center; }
+  .asis button { min-height: 36px; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font: inherit; font-size: 14px; cursor: pointer; }
+  .asis button[aria-pressed="true"].vino { background: var(--ok-soft); border-color: var(--ok); color: var(--ok); font-weight: 600; }
+  .asis button[aria-pressed="true"].novino { background: var(--err-soft); border-color: var(--err); color: var(--err); font-weight: 600; }
+  .gente .prog { grid-column: 1 / -1; font-size: 14px; color: var(--muted); }
+  .gente form.caja { grid-column: 1 / -1; margin-top: 6px; }
+  .chip.falta { background: var(--err-soft); color: var(--err); }
+  .coche-alumno { background: var(--field); border-radius: 10px; padding: 12px 14px; margin-top: 14px; font-size: 15px; text-align: left; }
+  .coche-alumno p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+  .coche-alumno ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+  .coche-alumno li { display: grid; gap: 2px; padding-top: 8px; border-top: 1px solid var(--line); }
+  .coche-alumno a { color: var(--accent); }
+  .coche { background: var(--field); border-radius: 10px; padding: 12px 14px; font-size: 15px; }
+  .coche ul { margin: 6px 0 0; padding-left: 18px; }
+  .coche li { margin: 2px 0; }
   .mis { margin-bottom: 32px; }
   .mis ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
   .mis li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; background: var(--accent-soft); }
@@ -208,7 +226,7 @@
   .nivel .tres label { position: relative; display: flex; align-items: center; justify-content: center; min-height: 48px; padding: 8px 6px; text-align: center;
     border: 1px solid var(--input-line); border-radius: 10px; background: var(--field); color: var(--ink); cursor: pointer; font-size: 15px; line-height: 1.2; }
   .nivel .tres label:hover { border-color: var(--ink); }
-  .nivel input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .nivel .tres input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
   .nivel .tres label:has(input:checked) { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); font-weight: 600; }
   .nivel .tres label:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
   .nivel[aria-invalid="true"] .tres label { border-color: var(--err); }
@@ -303,6 +321,7 @@
                 <label><input type="radio" name="vehiculo" value="no"> No</label>
               </div>
               <small class="aviso" id="aviso-vehiculo"></small>
+              <label class="check" id="comparte-caja" hidden><input type="checkbox" id="comparteCoche"> Puedo llevar a compañeros: acepto que los alumnos sin vehículo de mi clase vean mi nombre, municipio y teléfono para organizar el viaje.</label>
             </fieldset>
           </div>
           <fieldset class="nivel" id="simulador" aria-describedby="ayuda-simulador aviso-simulador">
@@ -630,9 +649,9 @@
   }
 
   // ── Perfil (datos recordados) ───────────────────────────────
-  const vehElegido = () => (document.querySelector("#vehiculo input:checked") || {}).value || "";
-  function ponerVehiculo(v) { document.querySelectorAll("#vehiculo input").forEach((i) => (i.checked = i.value === v)); }
-  document.querySelectorAll("#vehiculo input").forEach((i) => i.addEventListener("change", () => { ponerAviso("vehiculo", ""); idPeticion = idUnico(); }));
+  const vehElegido = () => (document.querySelector("#vehiculo input[name=vehiculo]:checked") || {}).value || "";
+  function ponerVehiculo(v) { document.querySelectorAll("#vehiculo input[name=vehiculo]").forEach((i) => (i.checked = i.value === v)); $("comparte-caja").hidden = v !== "coche"; }
+  document.querySelectorAll("#vehiculo input[name=vehiculo]").forEach((i) => i.addEventListener("change", () => { ponerAviso("vehiculo", ""); idPeticion = idUnico(); $("comparte-caja").hidden = vehElegido() !== "coche"; }));
   const simElegido = () => (document.querySelector("#simulador input:checked") || {}).value || "";
   function mostrarDetalleSim() {
     const si = simElegido() === "si";
@@ -650,11 +669,12 @@
     $("perfil").hidden = !hay; $("campos").hidden = hay;
     if (hay) {
       $("perfil-nombre").textContent = perfil.nombre;
-      $("perfil-datos").textContent = [perfil.correo, perfil.telefono, perfil.municipio, perfil.vehiculo === "no" ? "sin vehículo" : perfil.vehiculo].join(" · ");
+      $("perfil-datos").textContent = [perfil.correo, perfil.telefono, perfil.municipio, perfil.vehiculo === "no" ? "sin vehículo" : perfil.vehiculo + (perfil.comparteCoche ? " (comparte)" : "")].join(" · ");
     }
     if (perfil) {
       ["nombre", "correo", "telefono", "municipio"].forEach((k) => { if (perfil[k]) $(k).value = perfil[k]; });
       if (perfil.vehiculo) ponerVehiculo(perfil.vehiculo);
+      $("comparteCoche").checked = !!perfil.comparteCoche;
     }
     if (perfil && (perfil.simulador === "si" || perfil.simulador === "no")) ponerSim(perfil.simulador, perfil.simuladorTexto);
     $("recordar").checked = hay || guardado.leer("recordar", true) !== false;
@@ -666,7 +686,7 @@
     perfil = null; guardado.quitar("perfil");
     mias = []; guardado.poner("misReservas", []);
     ["nombre", "correo", "telefono", "municipio"].forEach((k) => { $(k).value = ""; ponerAviso(k, ""); });
-    ponerVehiculo(""); ponerAviso("vehiculo", "");
+    ponerVehiculo(""); ponerAviso("vehiculo", ""); $("comparteCoche").checked = false;
     ponerSim("", ""); ponerAviso("simulador", ""); ponerAviso("simuladorTexto", "");
     $("perfil").hidden = true; $("campos").hidden = false;
     if (datos) { pintarMias(); pintarCalendario(); }
@@ -701,6 +721,7 @@
     if (!c) return;
     const valores = { nombre: limpiar($("nombre").value), correo: limpiar($("correo").value).replace(/\s/g, "").toLowerCase(), telefono: limpiar($("telefono").value), municipio: limpiar($("municipio").value), vehiculo: vehElegido(), simulador: simElegido() };
     valores.simuladorTexto = valores.simulador === "si" ? limpiar($("simuladorTexto").value) : "";
+    const comparteCoche = valores.vehiculo === "coche" && $("comparteCoche").checked;
     let primeroMal = null;
     for (const k of Object.keys(valores)) { const e = validar[k](valores[k], valores.simulador); ponerAviso(k, e); if (e && !primeroMal) primeroMal = k; }
     if (primeroMal === "simulador" || primeroMal === "vehiculo") { $("perfil").hidden = true; $("campos").hidden = false; $(primeroMal).querySelector("input").focus(); return; }
@@ -710,7 +731,7 @@
     const estabaAbierta = c.estado === "abierta";
     enviando = true; pintarPanel();
     const lento = setTimeout(() => { $("pie").textContent = "La conexión va lenta. No cierres la página: seguimos intentándolo."; }, 6000);
-    const r = await pedir({ accion: "reservar", fecha: c.fecha, ...valores, web: $("web").value, idPeticion }, { reintentos: 2, espera: 15000 });
+    const r = await pedir({ accion: "reservar", fecha: c.fecha, ...valores, comparteCoche, web: $("web").value, idPeticion }, { reintentos: 2, espera: 15000 });
     clearTimeout(lento);
     enviando = false;
     if (!r.ok) {
@@ -728,7 +749,7 @@
       return;
     }
     // Éxito
-    if ($("recordar").checked) { perfil = { nombre: r.nombre, correo: r.correo, telefono: r.telefono, municipio: r.municipio || valores.municipio, vehiculo: valores.vehiculo, simulador: valores.simulador, simuladorTexto: valores.simuladorTexto }; guardado.poner("perfil", perfil); }
+    if ($("recordar").checked) { perfil = { nombre: r.nombre, correo: r.correo, telefono: r.telefono, municipio: r.municipio || valores.municipio, vehiculo: valores.vehiculo, comparteCoche, simulador: valores.simulador, simuladorTexto: valores.simuladorTexto }; guardado.poner("perfil", perfil); }
     if (!$("recordar").checked) { mias = []; } // en un dispositivo que no recuerda datos tampoco se guardan reservas
     else mias = mias.filter((m) => !(m.fecha === r.fecha && m.correo === r.correo)).concat([{ fecha: r.fecha, clave: r.clave, estado: r.estado, correo: r.correo }]);
     guardado.poner("misReservas", mias);
@@ -737,6 +758,47 @@
     elegida = null;
     cargar();
   });
+
+  // ── Añadir al calendario ──────────────────────────────────
+  function madridAUtc(fecha, hhmm) {
+    const [y, m, d] = fecha.split("-").map(Number), [h, mi] = hhmm.split(":").map(Number);
+    const objetivo = Date.UTC(y, m - 1, d, h, mi);
+    let t = objetivo;
+    const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+    for (let i = 0; i < 2; i++) {
+      const p = Object.fromEntries(fmt.formatToParts(new Date(t)).map((x) => [x.type, x.value]));
+      t += objetivo - Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute);
+    }
+    return new Date(t);
+  }
+  function enlacesCalendario(r) {
+    if (!r || !r.inicio || !r.fin) return "";
+    const z = (dt) => dt.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+    const ini = z(madridAUtc(r.fecha, r.inicio)), fin = z(madridAUtc(r.fecha, r.fin));
+    const titulo = "Clase de vuelo · UCA&Air", lugar = r.lugar || "";
+    const g = "https://calendar.google.com/calendar/render?action=TEMPLATE&text=" + encodeURIComponent(titulo) + "&dates=" + ini + "/" + fin + (lugar ? "&location=" + encodeURIComponent(lugar) : "") + "&details=" + encodeURIComponent("Clase de vuelo con doble mando.");
+    const escIcs = (x) => String(x).replace(/[\\;,]/g, (c) => "\\" + c).replace(/\n/g, "\\n");
+    const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//UCA&Air//Clases de vuelo//ES", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "BEGIN:VEVENT",
+      "UID:" + r.fecha + "-" + (r.numero || "clase") + "@ucanair", "DTSTAMP:" + z(new Date()), "DTSTART:" + ini, "DTEND:" + fin,
+      "SUMMARY:" + escIcs(titulo), lugar ? "LOCATION:" + escIcs(lugar) : "", "DESCRIPTION:" + escIcs("Clase de vuelo con doble mando."),
+      "BEGIN:VALARM", "TRIGGER:-PT12H", "ACTION:DISPLAY", "DESCRIPTION:" + escIcs(titulo), "END:VALARM", "END:VEVENT", "END:VCALENDAR"].filter(Boolean).join("\r\n");
+    const url = "data:text/calendar;charset=utf-8," + encodeURIComponent(ics);
+    return `<div class="calendario-botones">
+        <span class="ayuda">Añadir a tu calendario:</span>
+        <a class="btn secondary peq" href="${g}" target="_blank" rel="noopener">Google Calendar</a>
+        <a class="btn secondary peq" href="${url}" download="clase-vuelo-${r.fecha}.ics">Apple, Outlook… (.ics)</a>
+      </div>`;
+  }
+
+  function cajaConductores(lista) {
+    if (!Array.isArray(lista)) return "";
+    if (!lista.length) return `<div class="coche-alumno"><b>Compartir coche</b><p>Todavía nadie con coche de esta clase ha ofrecido llevar a compañeros. Vuelve a mirarlo más adelante desde el enlace del correo; si aparece alguien, también te lo pondremos en el recordatorio de la víspera.</p></div>`;
+    return `<div class="coche-alumno"><b>Compañeros con coche en esta clase</b><p>Han aceptado que les escribas para compartir viaje.</p><ul>${lista.map((x) => {
+      const tel = String(x.telefono || "").replace(/[^\d+]/g, ""), wa = tel.replace(/^\+/, "");
+      return `<li><span><b>${esc(x.nombre)}</b> · sale de ${esc(x.municipio || "¿?")}${x.mismaZona ? ' <span class="chip sim">tu zona</span>' : ""}</span>
+        <span><a href="tel:${esc(tel)}">${esc(x.telefono)}</a> · <a href="https://wa.me/${esc(wa)}" target="_blank" rel="noopener">WhatsApp</a></span></li>`;
+    }).join("")}</ul></div>`;
+  }
 
   function mostrarResultado(r, estabaAbierta) {
     const sorpresa = estabaAbierta && r.estado === "espera";
@@ -754,6 +816,8 @@
       <p style="color:var(--muted);font-size:15px">${r.correoEnviado === false
         ? "No hemos podido enviarte el correo de confirmación. Guarda el enlace de abajo para poder cancelar."
         : `Te hemos enviado un correo a <b>${esc(r.correo)}</b> con un enlace para cancelar. Mira en spam si no lo ves.`}</p>
+      ${ok ? enlacesCalendario(r) : ""}
+      ${ok ? cajaConductores(r.conductores) : ""}
       <div class="acciones">
         <a class="btn secondary" style="text-decoration:none;display:block" href="${enlace}">Ver o cancelar esta reserva</a>
         <button class="btn primary" type="button" id="otra">Volver al calendario</button>
@@ -796,6 +860,7 @@
       <h3 tabindex="-1">${esc(etiqueta[1])}</h3>
       <p><b>${esc(capital(fechaLarga(r.fecha)))}</b>, de ${r.inicio} a ${r.fin}${r.lugar ? `, en ${esc(r.lugar)}` : ""}</p>
       <p style="color:var(--muted);font-size:15px">${esc(r.nombre)} · ${esc(r.correo)}</p>
+      ${r.estado === "Confirmada" && !r.pasada ? enlacesCalendario(r) + cajaConductores(r.conductores) : ""}
       <div class="acciones" id="acciones-reserva">${r.sePuedeCancelar
         ? `<button class="btn secondary" type="button" id="cancelar">${r.estado === "Confirmada" ? "Cancelar mi plaza" : "Salir de la lista de espera"}</button>`
         : activa && r.pasada ? '<p class="pie">La clase ya ha empezado o ha pasado.</p>' : ""}</div>
@@ -852,13 +917,14 @@
       const malos = {}; if (validar.municipio(d.municipio)) malos.municipio = validar.municipio(d.municipio); if (validar.vehiculo(d.vehiculo)) malos.vehiculo = validar.vehiculo(d.vehiculo);
       if (Object.keys(malos).length) return { ok: false, error: "Revisa los datos marcados.", campos: malos };
       demoBD.reservas.push({ fecha: d.fecha, correo: d.correo, estado, clave, nombre, telefono: d.telefono, simulador: d.simulador });
-      return { ok: true, estado, posicion: estado === "espera" ? 2 : 0, fecha: d.fecha, inicio: c.inicio, fin: c.fin, clave, nombre, correo: d.correo, telefono: d.telefono, correoEnviado: true };
+      return { ok: true, estado, posicion: estado === "espera" ? 2 : 0, fecha: d.fecha, inicio: c.inicio, fin: c.fin, lugar: c.lugar, clave, nombre, correo: d.correo, telefono: d.telefono, correoEnviado: true,
+        conductores: d.vehiculo === "no" ? [{ nombre: "Lucía Gómez Ruiz", municipio: "Puerto Real", telefono: "+34 600 111 222", mismaZona: limpiar(d.municipio).toLowerCase() === "puerto real" }, { nombre: "Javier Ortega Sanz", municipio: "Cádiz", telefono: "+34 600 333 444", mismaZona: limpiar(d.municipio).toLowerCase() === "cádiz" }] : null };
     }
     if (d.accion === "consultar" || d.accion === "cancelar") {
       const r = demoBD.reservas.find((x) => x.clave === d.clave);
       if (!r) return { ok: false, error: "En el modo de prueba las reservas se pierden al recargar la página." };
       if (d.accion === "cancelar") { r.estado = "cancelada"; return { ok: true, cancelada: true }; }
-      return { ok: true, fecha: r.fecha, inicio: "10:00", fin: "13:00", nombre: r.nombre, correo: r.correo, estado: { confirmada: "Confirmada", espera: "Lista de espera", cancelada: "Cancelada" }[r.estado], posicion: 2, sePuedeCancelar: r.estado !== "cancelada" };
+      return { ok: true, fecha: r.fecha, inicio: "10:00", fin: "13:00", lugar: "Club de Aeromodelismo El Muro", nombre: r.nombre, correo: r.correo, estado: { confirmada: "Confirmada", espera: "Lista de espera", cancelada: "Cancelada" }[r.estado], posicion: 2, sePuedeCancelar: r.estado !== "cancelada" };
     }
     if (d.accion === "reenviar") return { ok: true, mensaje: "Si ese correo tiene reservas pendientes, te acabamos de enviar los enlaces. Mira también en spam." };
     return { ok: false, error: "Acción desconocida." };
@@ -960,14 +1026,33 @@
     ADM.mensaje = null;
   }
 
-  function personaAdmin(r, activa, editable) {
+  function personaAdmin(r, activa, editable, c) {
     const tel = r.telefono.replace(/\s/g, "");
+    const hoyIso = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
+    const asistencia = c && activa && r.estado === "Confirmada" && c.fecha <= hoyIso;
+    const pid = "p" + r.numero + (c ? c.fecha.replace(/-/g, "") : "");
+    const umbral = ADM.datos && ADM.datos.base ? ADM.datos.base.faltasPrioridad : 0;
     return `<li class="${activa ? "" : "inactiva"}">
-      <span class="nom">${esc(r.nombre)}${r.simulador && !/^sí:/i.test(r.simulador) ? ` <span class="chip sim" title="¿Ha usado el simulador?">Simulador: ${esc(r.simulador.toLowerCase())}</span>` : ""}${activa ? "" : ` <span class="chip">${esc(r.estado)}</span>`}</span>
+      <span class="nom">${esc(r.nombre)}${r.faltas ? ` <span class="chip falta" title="Veces que no vino sin avisar">${r.faltas} falta${r.faltas === 1 ? "" : "s"}${umbral && r.faltas >= umbral ? " · sin prioridad" : ""}</span>` : ""}${r.simulador && !/^sí:/i.test(r.simulador) ? ` <span class="chip sim" title="¿Ha usado el simulador?">Simulador: ${esc(r.simulador.toLowerCase())}</span>` : ""}${activa ? "" : ` <span class="chip">${esc(r.estado)}</span>`}</span>
       <span class="acc">${activa && editable ? `<button type="button" class="btn secondary peq" data-quitar="${esc(r.numero)}" data-nombre="${esc(r.nombre)}">Quitar</button>` : ""}</span>
       <span class="con"><a href="tel:${esc(tel)}">${esc(r.telefono)}</a> · <a href="mailto:${esc(r.correo)}">${esc(r.correo)}</a></span>
       ${r.vehiculo || r.municipio ? `<span class="con">${esc([r.municipio, r.vehiculo ? (r.vehiculo === "No" ? "sin vehículo" : r.vehiculo.toLowerCase()) : ""].filter(Boolean).join(" · "))}</span>` : ""}
       ${r.simulador && /^sí:/i.test(r.simulador) ? `<span class="sim-txt"><b>Simulador:</b> ${esc(r.simulador.replace(/^sí:\s*/i, ""))}</span>` : ""}
+      ${activa ? `<span class="prog">${r.horas ? `${String(r.horas).replace(".", ",")} h de vuelo` : "Sin horas anotadas"}${r.ultimaNota ? ` · Última nota: ${esc(r.ultimaNota)}` : ""}</span>` : ""}
+      ${activa ? `<span class="asis">
+        ${asistencia ? `<span class="ayuda">¿Vino?</span>
+        <button type="button" class="vino" data-asis="${esc(r.numero)}" data-valor="${r.asistencia === "Vino" ? "" : "vino"}" aria-pressed="${r.asistencia === "Vino"}">Vino</button>
+        <button type="button" class="novino" data-asis="${esc(r.numero)}" data-valor="${r.asistencia === "No vino" ? "" : "novino"}" aria-pressed="${r.asistencia === "No vino"}">No vino</button>` : ""}
+        <button type="button" data-abrir="${pid}" aria-expanded="false" aria-controls="${pid}">Anotar progreso</button>
+      </span>
+      <form class="caja" id="${pid}" data-progreso="${esc(r.numero)}" data-nombre="${esc(r.nombre)}" hidden novalidate action="javascript:void 0">
+        <div class="dos">
+          <div class="campo"><label for="h-${pid}">Horas voladas hoy</label><input id="h-${pid}" name="horas" type="text" inputmode="decimal" placeholder="0,5" maxlength="5" autocomplete="off"><small class="aviso" data-aviso="horas"></small></div>
+          <div class="campo"><label for="n-${pid}">Nota del instructor</label><input id="n-${pid}" name="nota" type="text" maxlength="300" placeholder="Ej.: despega solo, le cuesta el viraje" autocomplete="off"><small class="aviso" data-aviso="nota"></small></div>
+        </div>
+        <small class="aviso" data-aviso="general" role="alert"></small>
+        <button class="btn primary" type="submit">Guardar progreso</button>
+      </form>` : ""}
     </li>`;
   }
 
@@ -991,12 +1076,17 @@
       <div class="adm-cuerpo">
         ${msg ? `<p class="banda ${msg.error ? "error" : "info"}" style="margin:0" role="status">${esc(msg.texto)}</p>` : ""}
         ${c.nota ? `<p class="ayuda">Nota: ${esc(c.nota)}</p>` : ""}
-        <div><p class="subt">Apuntados</p>${conf.length ? `<ul class="gente">${conf.map((r) => personaAdmin(r, true, editable)).join("")}</ul>` : '<p class="ayuda">Nadie todavía.</p>'}</div>
-        ${esp.length ? `<div><p class="subt">Lista de espera</p><ul class="gente">${esp.map((r) => personaAdmin(r, true, editable)).join("")}</ul></div>` : ""}
+        <div><p class="subt">Apuntados</p>${conf.length ? `<ul class="gente">${conf.map((r) => personaAdmin(r, true, editable, c)).join("")}</ul>` : '<p class="ayuda">Nadie todavía.</p>'}</div>
+        ${esp.length ? `<div><p class="subt">Lista de espera</p><ul class="gente">${esp.map((r) => personaAdmin(r, true, editable, c)).join("")}</ul></div>` : ""}
+        ${c.coche && (c.coche.viajes.length || c.coche.sinCoche.length) ? `<div class="coche"><b>Compartir coche</b><ul>
+          ${c.coche.viajes.map((v) => `<li>${esc(v.conductor)} (coche, ${esc(v.municipio)}) puede llevar a ${esc(v.pasajeros.join(", "))}</li>`).join("")}
+          ${c.coche.sinCoche.map((p) => { const con = c.coche.conCoche.filter((x) => x.sitios > 0); return `<li>${esc(p.nombre)} (${esc(p.municipio || "¿?")}) no tiene vehículo${con.length ? `. Con coche van: ${esc(con.map((x) => x.nombre + " (" + x.municipio + ")").join(", "))}` : " y nadie de la clase lleva coche"}</li>`; }).join("")}
+        </ul></div>` : ""}
         ${bajas.length ? `<details><summary class="ayuda" style="cursor:pointer;padding:10px 0">Bajas y anuladas (${bajas.length})</summary><ul class="gente">${bajas.map((r) => personaAdmin(r, false, false)).join("")}</ul></details>` : ""}
         ${editable ? `<div class="adm-botones">
           ${!c.sinClase && c.estado !== "cancelada" ? `<button type="button" class="btn secondary peq" data-abrir="apuntar-${id}" aria-expanded="false" aria-controls="apuntar-${id}">Apuntar a alguien</button>` : ""}
           <button type="button" class="btn secondary peq" data-abrir="editar-${id}" aria-expanded="false" aria-controls="editar-${id}">Editar este día</button>
+          ${!c.sinClase && c.estado !== "cancelada" && !c.empezada ? `<button type="button" class="btn secondary peq" data-meteo="${c.fecha}">Cancelar por meteo</button>` : ""}
         </div>
         <form class="caja" id="apuntar-${id}" data-apuntar="${c.fecha}" hidden novalidate action="javascript:void 0">
           <p class="subt">Apuntar a alguien</p>
@@ -1059,6 +1149,29 @@
       if (!f.hidden) { const i = f.querySelector("input:not([type=radio]):not([type=checkbox])"); if (i && f.dataset.apuntar) i.focus(); }
       return;
     }
+    const asis = ev.target.closest("[data-asis]");
+    if (asis) {
+      const fecha = asis.closest("details.adm").dataset.fecha;
+      asis.disabled = true;
+      const r = await admPedir({ accion: "adminAsistencia", numero: asis.dataset.asis, valor: asis.dataset.valor }, { reintentos: 1 });
+      if (!r.ok) { if (r.codigo !== "sesion") { alert(r.error); asis.disabled = false; } return; }
+      ADM.mensaje = { fecha, texto: r.asistencia ? `Asistencia guardada: ${r.asistencia.toLowerCase()}.` : "Asistencia borrada." };
+      admCargar();
+      return;
+    }
+    const meteo = ev.target.closest("[data-meteo]");
+    if (meteo) {
+      const fecha = meteo.dataset.meteo, c = ADM.datos.clases.find((x) => x.fecha === fecha);
+      const n = c ? c.reservas.filter((r) => r.estado === "Confirmada" || r.estado === "Lista de espera").length : 0;
+      const motivo = prompt(`Se cancelará la clase del ${fechaLarga(fecha)}${n ? ` y se avisará por correo a ${n} persona${n === 1 ? "" : "s"}` : ""}. Motivo que verán:`, "Suspendida por la meteorología (viento o lluvia).");
+      if (motivo === null) return;
+      meteo.disabled = true; meteo.textContent = "Cancelando…";
+      const r = await admPedir({ accion: "adminDia", fecha, tipo: "cancelada", nota: motivo || "Suspendida por la meteorología." }, { reintentos: 1 });
+      if (!r.ok) { if (r.codigo !== "sesion") { alert(r.error); meteo.disabled = false; meteo.textContent = "Cancelar por meteo"; } return; }
+      ADM.mensaje = { fecha, texto: "Clase cancelada por meteo." + (r.avisados ? ` Se ha avisado a ${r.avisados} persona${r.avisados === 1 ? "" : "s"}.` : "") + " Si mejora el tiempo, edita el día y vuelve a ponerla en marcha: las reservas se recuperan." };
+      admCargar();
+      return;
+    }
     const quitar = ev.target.closest("[data-quitar]");
     if (quitar) {
       const fecha = quitar.closest("details.adm").dataset.fecha;
@@ -1079,6 +1192,19 @@
     f.querySelectorAll("[data-aviso]").forEach((a) => (a.textContent = ""));
     const boton = f.querySelector("button[type=submit]"), textoBoton = boton.textContent;
     const ocupado = (si) => { boton.disabled = si; boton.textContent = si ? "Guardando…" : textoBoton; };
+    if (f.dataset.progreso) {
+      const fecha = f.closest("details.adm").dataset.fecha;
+      const horas = f.elements.horas.value.trim(), nota = limpiar(f.elements.nota.value);
+      if (horas && !/^\d{1,2}([.,]\d{1,2})?$/.test(horas)) { aviso("horas", "Escribe un número, p. ej. 0,5"); f.elements.horas.focus(); return; }
+      if (!horas && !nota) { aviso("nota", "Escribe una nota o las horas voladas."); f.elements.nota.focus(); return; }
+      ocupado(true);
+      const r = await admPedir({ accion: "adminProgreso", numero: f.dataset.progreso, horas, nota }, { reintentos: 1 });
+      ocupado(false);
+      if (!r.ok) { if (r.campos) Object.entries(r.campos).forEach(([k, t]) => aviso(k, t)); else if (r.codigo !== "sesion") aviso("general", r.error); return; }
+      ADM.mensaje = { fecha, texto: `Progreso de ${f.dataset.nombre} guardado: ${String(r.horas).replace(".", ",")} h de vuelo en total.` };
+      admCargar();
+      return;
+    }
     if (f.dataset.apuntar) {
       const fecha = f.dataset.apuntar;
       const v = { nombre: limpiar(f.elements.nombre.value), correo: limpiar(f.elements.correo.value).replace(/\s/g, "").toLowerCase(), telefono: limpiar(f.elements.telefono.value) };
