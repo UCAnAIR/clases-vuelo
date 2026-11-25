@@ -199,6 +199,8 @@
   .nivel legend { font-size: 15px; color: var(--muted); padding: 0; margin-bottom: 2px; }
   .nivel .ayuda { margin-bottom: 8px; }
   .nivel .tres { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .nivel .tres.t3 { grid-template-columns: repeat(3, 1fr); }
+  .nivel legend + .tres { margin-top: 6px; }
   .sim-detalle { display: grid; gap: 5px; margin-top: 12px; }
   .sim-detalle textarea { min-height: 84px; resize: vertical; line-height: 1.4; }
   .contador { font-size: 13px; color: var(--muted); justify-self: end; }
@@ -283,6 +285,25 @@
               <input id="telefono" name="telefono" type="tel" autocomplete="tel" inputmode="tel" maxlength="25" aria-describedby="aviso-telefono">
               <small class="aviso" id="aviso-telefono"></small>
             </div>
+            <div class="campo" style="margin-top:14px">
+              <label for="municipio">Municipio donde vives</label>
+              <input id="municipio" name="municipio" type="text" autocomplete="address-level2" list="municipios" maxlength="60" placeholder="Ej.: Puerto Real" aria-describedby="aviso-municipio">
+              <datalist id="municipios">
+                <option value="Cádiz"><option value="San Fernando"><option value="Puerto Real"><option value="El Puerto de Santa María">
+                <option value="Chiclana de la Frontera"><option value="Jerez de la Frontera"><option value="Rota"><option value="Chipiona">
+                <option value="Sanlúcar de Barrameda"><option value="Medina Sidonia"><option value="Conil de la Frontera"><option value="Vejer de la Frontera">
+              </datalist>
+              <small class="aviso" id="aviso-municipio"></small>
+            </div>
+            <fieldset class="nivel" id="vehiculo" aria-describedby="aviso-vehiculo">
+              <legend>¿Tienes vehículo propio para ir al campo de vuelo?</legend>
+              <div class="tres t3">
+                <label><input type="radio" name="vehiculo" value="coche"> Coche</label>
+                <label><input type="radio" name="vehiculo" value="moto"> Moto</label>
+                <label><input type="radio" name="vehiculo" value="no"> No</label>
+              </div>
+              <small class="aviso" id="aviso-vehiculo"></small>
+            </fieldset>
           </div>
           <fieldset class="nivel" id="simulador" aria-describedby="ayuda-simulador aviso-simulador">
             <legend>¿Has usado el simulador?</legend>
@@ -415,6 +436,8 @@
       if (!/^[a-z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*\.[a-z]{2,}$/.test(s) || /\.\.|^\.|\.@/.test(s)) return "Ese correo no parece válido. Revísalo (p. ej. nombre@gmail.com).";
       return "";
     },
+    municipio(v) { const s = limpiar(v); if (!s) return "Escribe tu municipio."; return s.length > 60 || !/^[\p{L}][\p{L}\p{M}'’ .\-()]*$/u.test(s) ? "Escribe solo el nombre del municipio (p. ej. Puerto Real)." : ""; },
+    vehiculo(v) { return ["coche", "moto", "no"].includes(v) ? "" : "Dinos si tienes vehículo propio."; },
     simulador(v) { return v === "si" || v === "no" ? "" : "Dinos si has usado el simulador."; },
     simuladorTexto(v, usado) { if (usado !== "si") return ""; const t = limpiar(v); return t.length < 3 ? "Cuéntanos qué sabes hacer con el simulador." : t.length > 300 ? "Máximo 300 caracteres." : ""; },
     telefono(v) {
@@ -552,7 +575,7 @@
     pintarPanel();
     ponerAviso("general", "");
     if (window.matchMedia("(max-width: 900px)").matches) $("panel").scrollIntoView({ behavior: "smooth", block: "start" });
-    const primero = perfil ? $("enviar") : ["nombre", "correo", "telefono"].map($).find((i) => !i.value);
+    const primero = perfil ? $("enviar") : ["nombre", "correo", "telefono", "municipio"].map($).find((i) => !i.value);
     if (primero && !window.matchMedia("(max-width: 900px)").matches) primero.focus({ preventScroll: true });
   }
 
@@ -607,6 +630,9 @@
   }
 
   // ── Perfil (datos recordados) ───────────────────────────────
+  const vehElegido = () => (document.querySelector("#vehiculo input:checked") || {}).value || "";
+  function ponerVehiculo(v) { document.querySelectorAll("#vehiculo input").forEach((i) => (i.checked = i.value === v)); }
+  document.querySelectorAll("#vehiculo input").forEach((i) => i.addEventListener("change", () => { ponerAviso("vehiculo", ""); idPeticion = idUnico(); }));
   const simElegido = () => (document.querySelector("#simulador input:checked") || {}).value || "";
   function mostrarDetalleSim() {
     const si = simElegido() === "si";
@@ -620,12 +646,15 @@
   }));
   $("simuladorTexto").addEventListener("input", () => { idPeticion = idUnico(); mostrarDetalleSim(); if ($("simuladorTexto").getAttribute("aria-invalid") === "true") ponerAviso("simuladorTexto", validar.simuladorTexto($("simuladorTexto").value, "si")); });
   function pintarPerfil() {
-    const hay = !!(perfil && perfil.nombre && perfil.correo && perfil.telefono);
+    const hay = !!(perfil && perfil.nombre && perfil.correo && perfil.telefono && perfil.municipio && perfil.vehiculo);
     $("perfil").hidden = !hay; $("campos").hidden = hay;
     if (hay) {
       $("perfil-nombre").textContent = perfil.nombre;
-      $("perfil-datos").textContent = perfil.correo + " · " + perfil.telefono;
-      $("nombre").value = perfil.nombre; $("correo").value = perfil.correo; $("telefono").value = perfil.telefono;
+      $("perfil-datos").textContent = [perfil.correo, perfil.telefono, perfil.municipio, perfil.vehiculo === "no" ? "sin vehículo" : perfil.vehiculo].join(" · ");
+    }
+    if (perfil) {
+      ["nombre", "correo", "telefono", "municipio"].forEach((k) => { if (perfil[k]) $(k).value = perfil[k]; });
+      if (perfil.vehiculo) ponerVehiculo(perfil.vehiculo);
     }
     if (perfil && (perfil.simulador === "si" || perfil.simulador === "no")) ponerSim(perfil.simulador, perfil.simuladorTexto);
     $("recordar").checked = hay || guardado.leer("recordar", true) !== false;
@@ -636,7 +665,8 @@
   $("perfil-noyo").addEventListener("click", () => {
     perfil = null; guardado.quitar("perfil");
     mias = []; guardado.poner("misReservas", []);
-    ["nombre", "correo", "telefono"].forEach((k) => { $(k).value = ""; ponerAviso(k, ""); });
+    ["nombre", "correo", "telefono", "municipio"].forEach((k) => { $(k).value = ""; ponerAviso(k, ""); });
+    ponerVehiculo(""); ponerAviso("vehiculo", "");
     ponerSim("", ""); ponerAviso("simulador", ""); ponerAviso("simuladorTexto", "");
     $("perfil").hidden = true; $("campos").hidden = false;
     if (datos) { pintarMias(); pintarCalendario(); }
@@ -652,7 +682,7 @@
     const a = $("aviso-" + campo); if (a) a.textContent = texto || "";
     const i = $(campo); if (i && (i.tagName === "INPUT" || i.tagName === "FIELDSET" || i.tagName === "TEXTAREA")) i.setAttribute("aria-invalid", texto ? "true" : "false");
   }
-  ["nombre", "correo", "telefono"].forEach((k) => {
+  ["nombre", "correo", "telefono", "municipio"].forEach((k) => {
     const i = $(k);
     i.addEventListener("input", () => { if (i.getAttribute("aria-invalid") === "true") ponerAviso(k, validar[k](i.value)); idPeticion = idUnico(); if (k === "correo") $("sugerencia").hidden = true; });
     i.addEventListener("blur", () => {
@@ -669,11 +699,11 @@
     if (enviando) return;
     const c = claseElegida();
     if (!c) return;
-    const valores = { nombre: limpiar($("nombre").value), correo: limpiar($("correo").value).replace(/\s/g, "").toLowerCase(), telefono: limpiar($("telefono").value), simulador: simElegido() };
+    const valores = { nombre: limpiar($("nombre").value), correo: limpiar($("correo").value).replace(/\s/g, "").toLowerCase(), telefono: limpiar($("telefono").value), municipio: limpiar($("municipio").value), vehiculo: vehElegido(), simulador: simElegido() };
     valores.simuladorTexto = valores.simulador === "si" ? limpiar($("simuladorTexto").value) : "";
     let primeroMal = null;
     for (const k of Object.keys(valores)) { const e = validar[k](valores[k], valores.simulador); ponerAviso(k, e); if (e && !primeroMal) primeroMal = k; }
-    if (primeroMal === "simulador") { $("simulador").querySelector("input").focus(); return; }
+    if (primeroMal === "simulador" || primeroMal === "vehiculo") { $("perfil").hidden = true; $("campos").hidden = false; $(primeroMal).querySelector("input").focus(); return; }
     if (primeroMal === "simuladorTexto") { $("simuladorTexto").focus(); return; }
     if (primeroMal) { $("perfil").hidden = true; $("campos").hidden = false; $(primeroMal).focus(); return; }
     ponerAviso("general", "");
@@ -698,7 +728,7 @@
       return;
     }
     // Éxito
-    if ($("recordar").checked) { perfil = { nombre: r.nombre, correo: r.correo, telefono: r.telefono, simulador: valores.simulador, simuladorTexto: valores.simuladorTexto }; guardado.poner("perfil", perfil); }
+    if ($("recordar").checked) { perfil = { nombre: r.nombre, correo: r.correo, telefono: r.telefono, municipio: r.municipio || valores.municipio, vehiculo: valores.vehiculo, simulador: valores.simulador, simuladorTexto: valores.simuladorTexto }; guardado.poner("perfil", perfil); }
     if (!$("recordar").checked) { mias = []; } // en un dispositivo que no recuerda datos tampoco se guardan reservas
     else mias = mias.filter((m) => !(m.fecha === r.fecha && m.correo === r.correo)).concat([{ fecha: r.fecha, clave: r.clave, estado: r.estado, correo: r.correo }]);
     guardado.poner("misReservas", mias);
@@ -819,6 +849,8 @@
       const clave = Array.from({ length: 40 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
       const nombre = limpiar(d.nombre).split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
       if (d.simulador !== "si" && d.simulador !== "no") return { ok: false, error: "Revisa los datos marcados.", campos: { simulador: "Dinos si has usado el simulador." } };
+      const malos = {}; if (validar.municipio(d.municipio)) malos.municipio = validar.municipio(d.municipio); if (validar.vehiculo(d.vehiculo)) malos.vehiculo = validar.vehiculo(d.vehiculo);
+      if (Object.keys(malos).length) return { ok: false, error: "Revisa los datos marcados.", campos: malos };
       demoBD.reservas.push({ fecha: d.fecha, correo: d.correo, estado, clave, nombre, telefono: d.telefono, simulador: d.simulador });
       return { ok: true, estado, posicion: estado === "espera" ? 2 : 0, fecha: d.fecha, inicio: c.inicio, fin: c.fin, clave, nombre, correo: d.correo, telefono: d.telefono, correoEnviado: true };
     }
@@ -934,6 +966,7 @@
       <span class="nom">${esc(r.nombre)}${r.simulador && !/^sí:/i.test(r.simulador) ? ` <span class="chip sim" title="¿Ha usado el simulador?">Simulador: ${esc(r.simulador.toLowerCase())}</span>` : ""}${activa ? "" : ` <span class="chip">${esc(r.estado)}</span>`}</span>
       <span class="acc">${activa && editable ? `<button type="button" class="btn secondary peq" data-quitar="${esc(r.numero)}" data-nombre="${esc(r.nombre)}">Quitar</button>` : ""}</span>
       <span class="con"><a href="tel:${esc(tel)}">${esc(r.telefono)}</a> · <a href="mailto:${esc(r.correo)}">${esc(r.correo)}</a></span>
+      ${r.vehiculo || r.municipio ? `<span class="con">${esc([r.municipio, r.vehiculo ? (r.vehiculo === "No" ? "sin vehículo" : r.vehiculo.toLowerCase()) : ""].filter(Boolean).join(" · "))}</span>` : ""}
       ${r.simulador && /^sí:/i.test(r.simulador) ? `<span class="sim-txt"><b>Simulador:</b> ${esc(r.simulador.replace(/^sí:\s*/i, ""))}</span>` : ""}
     </li>`;
   }
@@ -971,6 +1004,14 @@
           <div class="dos">
             <div class="campo"><label for="ac-${id}">Correo</label><input id="ac-${id}" name="correo" type="email" inputmode="email" autocomplete="off" spellcheck="false" autocapitalize="off" maxlength="120"><small class="aviso" data-aviso="correo"></small></div>
             <div class="campo"><label for="at-${id}">Teléfono</label><input id="at-${id}" name="telefono" type="tel" inputmode="tel" autocomplete="off" maxlength="25"><small class="aviso" data-aviso="telefono"></small></div>
+          </div>
+          <div class="dos">
+            <div class="campo"><label for="am-${id}">Municipio (opcional)</label><input id="am-${id}" name="municipio" type="text" list="municipios" autocomplete="off" maxlength="60"><small class="aviso" data-aviso="municipio"></small></div>
+            <fieldset class="opciones"><legend>Vehículo propio (opcional)</legend>
+              <label><input type="radio" name="vehiculo" value="coche"> Coche</label>
+              <label><input type="radio" name="vehiculo" value="moto"> Moto</label>
+              <label><input type="radio" name="vehiculo" value="no"> No</label>
+            </fieldset>
           </div>
           <fieldset class="opciones"><legend>¿Ha usado el simulador? (opcional)</legend>
             <label><input type="radio" name="simulador" value="si"> Sí</label>
@@ -1045,6 +1086,9 @@
       if (mal) return;
       v.simulador = (f.querySelector("input[name=simulador]:checked") || {}).value || "";
       v.simuladorTexto = v.simulador === "si" ? limpiar(f.elements.simuladorTexto.value) : "";
+      v.municipio = limpiar(f.elements.municipio.value);
+      if (v.municipio && validar.municipio(v.municipio)) { aviso("municipio", validar.municipio(v.municipio)); f.elements.municipio.focus(); return; }
+      v.vehiculo = (f.querySelector("input[name=vehiculo]:checked") || {}).value || "";
       ocupado(true);
       let r = await admPedir({ accion: "adminApuntar", fecha, ...v, avisar: f.elements.avisar.checked }, { reintentos: 1 });
       if (!r.ok && r.codigo === "llena" && confirm(r.error)) r = await admPedir({ accion: "adminApuntar", fecha, ...v, avisar: f.elements.avisar.checked, forzar: true }, { reintentos: 1 });
