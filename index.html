@@ -1,0 +1,1037 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clases de vuelo de UCA&amp;Air</title>
+<meta name="description" content="Apúntate a las clases de vuelo con doble mando de UCA&Air.">
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1f1e1d" media="(prefers-color-scheme: dark)">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<style>
+  /* Paleta: tinta azul noche, azul y naranja de UCA&Air. El tema sigue al del dispositivo. */
+  :root {
+    --bg: #ffffff; --surface: #ffffff; --field: #f6f9fa; --line: #d9e2e7; --line-strong: #b9c7cf; --input-line: #768a94;
+    --ink: #102530; --muted: #5d717b; --accent: #126586; --accent-soft: #e5f0f5;
+    --orange: #a9560a; --orange-soft: #fcefe2; --seat-taken: #8c9ea7;
+    --ok: #1d6b47; --ok-soft: #e4f3eb; --warn: #8a5300; --warn-soft: #fdf1dc; --err: #b3261e; --err-soft: #fbe9e7;
+    --btn: #102530; --btn-ink: #ffffff;
+    --shadow: 0 1px 2px rgba(16,37,48,.06), 0 10px 30px -14px rgba(16,37,48,.22);
+    --display: "Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+    --text: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1f1e1d; --surface: #2a2927; --field: #32312e; --line: #3b3a37; --line-strong: #52504c; --input-line: #827f78; --seat-taken: #6b6964;
+      --ink: #ecebe7; --muted: #aeaca5; --accent: #8cc2dd; --accent-soft: #2c3337;
+      --orange: #f0a252; --orange-soft: #3a2e20;
+      --ok: #8fd1ad; --ok-soft: #26302a; --warn: #eec571; --warn-soft: #36301f; --err: #ff978c; --err-soft: #3d2826;
+      --btn: #ecebe7; --btn-ink: #1f1e1d;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 32px -14px rgba(0,0,0,.6);
+    }
+    .logo path[fill="#126586"] { fill: #6ea9c8; }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.5 var(--text); }
+  main { max-width: 1100px; margin: 0 auto; padding: 36px 20px 72px; }
+  [hidden] { display: none !important; }
+  a { color: var(--accent); text-underline-offset: 3px; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+
+  /* Cabecera */
+  header { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 28px; }
+  h1 { margin: 0; font: 700 clamp(36px, 7vw, 60px)/.95 var(--display); letter-spacing: -.01em; }
+  .sub { margin: 10px 0 0; color: var(--muted); max-width: 46ch; }
+  .logo { height: 58px; width: auto; display: block; flex: none; }
+  .logo title { display: none; }
+  @media (max-width: 600px) { header { align-items: flex-start; } .logo { height: 40px; } main { padding: 24px 16px 56px; } }
+
+  .banda { border-radius: 10px; padding: 12px 14px; margin: 0 0 20px; font-size: 16px; }
+  .banda.info { background: var(--accent-soft); }
+  .banda.prueba { background: var(--warn-soft); color: var(--warn); }
+  .banda.error { background: var(--err-soft); color: var(--err); }
+  .datos { display: flex; flex-wrap: wrap; gap: 6px 28px; color: var(--muted); font-size: 16px; margin: 0 0 32px; padding: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .datos b { color: var(--ink); font-weight: 600; }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 48px; align-items: start; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; gap: 32px; } }
+  h2 { font: 600 24px/1.2 var(--display); margin: 0 0 14px; }
+  .mes { margin: 28px 0 10px; font: 600 17px/1.2 var(--display); color: var(--muted); }
+  .mes:first-of-type { margin-top: 0; }
+
+  /* Clases: cada fila es una tira de vuelo */
+  .clases { display: grid; gap: 10px; }
+  .clase {
+    width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; position: relative;
+    display: grid; grid-template-columns: 70px 1fr auto; gap: 18px; align-items: center;
+    padding: 14px 18px 14px 0; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden;
+  }
+  .clase::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--line); }
+  .clase.abierta::before { background: var(--orange); }
+  .clase.espera::before { background: var(--warn); }
+  .clase:hover:not([aria-disabled="true"]) { border-color: var(--line-strong); }
+  .clase[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+  .clase[aria-disabled="true"] { cursor: default; }
+  .clase[aria-disabled="true"] .fecha .num, .clase[aria-disabled="true"] .info .hora { opacity: .55; }
+  .fecha { text-align: center; line-height: 1; font-family: var(--display); }
+  .fecha .dow { font-size: 15px; font-weight: 600; color: var(--muted); }
+  .fecha .num { font-size: 40px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .info .hora { font: 600 20px/1.2 var(--display); font-variant-numeric: tabular-nums; }
+  .info .extra { color: var(--muted); font-size: 15px; }
+  .estado { text-align: right; font-size: 15px; }
+  .asientos { display: flex; gap: 5px; justify-content: flex-end; margin-bottom: 6px; flex-wrap: wrap; max-width: 140px; margin-left: auto; }
+  .asientos i { width: 12px; height: 16px; border-radius: 4px 4px 3px 3px; border: 2px solid var(--orange); }
+  .asientos i.ocupado { background: var(--seat-taken); border-color: var(--seat-taken); }
+  .t-abierta { color: var(--orange); font-weight: 600; }
+  .t-espera { color: var(--warn); font-weight: 600; }
+  .t-cerrada, .t-completa { color: var(--muted); }
+  .t-cancelada { color: var(--err); font-weight: 600; }
+  .mia { display: inline-block; margin-top: 4px; font-size: 14px; font-weight: 600; color: var(--accent); }
+  @media (max-width: 520px) {
+    .clase { grid-template-columns: 58px 1fr; gap: 4px 12px; padding-right: 14px; }
+    .fecha { grid-row: span 2; } .fecha .num { font-size: 34px; }
+    .estado { text-align: left; display: flex; gap: 10px; align-items: center; }
+    .asientos { margin: 0; justify-content: flex-start; }
+  }
+  .vacio { color: var(--muted); padding: 28px; border: 1px dashed var(--line-strong); border-radius: 12px; text-align: center; }
+  .esqueleto { height: 84px; border-radius: 12px; background: var(--field); animation: pulso 1.4s ease-in-out infinite; }
+  @keyframes pulso { 50% { opacity: .5; } }
+
+  /* Panel de reserva */
+  .panel { position: sticky; top: 20px; border: 1px solid var(--line); border-radius: 16px; padding: 22px; background: var(--surface); box-shadow: var(--shadow); }
+  @media (max-width: 900px) { .panel { position: static; scroll-margin-top: 12px; } }
+  .panel h3 { margin: 0 0 4px; font: 700 26px/1.1 var(--display); }
+  .panel .elegida { color: var(--muted); margin: 0 0 18px; }
+  form { display: grid; gap: 14px; }
+  .campo { display: grid; gap: 5px; }
+  label { font-size: 15px; color: var(--muted); }
+  input[type="text"], input[type="email"], input[type="tel"], input[type="number"], textarea {
+    font: inherit; font-size: 17px; width: 100%; padding: 11px 12px; border: 1px solid var(--input-line); border-radius: 8px; background: var(--field); color: var(--ink);
+  }
+  input::placeholder { color: var(--muted); opacity: .7; }
+  input:focus-visible, textarea:focus-visible { border-color: transparent; }
+  input[aria-invalid="true"] { border-color: var(--err); }
+  .aviso { color: var(--err); font-size: 14px; }
+  .aviso:empty, .ok-texto:empty { display: none; }
+  .sugerencia { font-size: 14px; color: var(--warn); }
+  .sugerencia button { font: inherit; color: inherit; background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
+  .check { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; color: var(--muted); cursor: pointer; padding: 8px 0; }
+  .check input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
+  .trampa { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .perfil { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; background: var(--field); border-radius: 10px; }
+  .perfil span { font-weight: 600; }
+  .perfil small { display: block; color: var(--muted); font-size: 14px; overflow-wrap: anywhere; font-weight: 400; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .enlace { font: inherit; font-size: 15px; color: var(--accent); background: none; border: 0; padding: 10px 0; display: inline-block; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+  .btn { font: 600 17px/1.2 var(--text); padding: 14px 18px; border-radius: 10px; border: 1px solid transparent; cursor: pointer; width: 100%; text-align: center; text-decoration: none; display: block; }
+  .btn.primary { background: var(--btn); color: var(--btn-ink); }
+  .btn.primary:hover:not(:disabled) { opacity: .9; }
+  .btn.secondary { background: transparent; color: var(--ink); border-color: var(--line-strong); }
+  .btn.secondary:hover:not(:disabled) { background: var(--field); }
+  .btn.peligro { background: var(--err); color: #fff; }
+  @media (prefers-color-scheme: dark) { .btn.peligro { color: #1b0b09; } }
+  .btn.peq { width: auto; min-height: 44px; padding: 10px 14px; font-size: 15px; display: inline-block; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn[aria-busy="true"] { cursor: progress; }
+  .pie { color: var(--muted); font-size: 14px; margin: 0; }
+  .resultado { text-align: center; }
+  .resultado .icono { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; margin: 4px auto 12px; font-size: 24px; font-weight: 700; }
+  .resultado .icono.ok { background: var(--ok-soft); color: var(--ok); }
+  .resultado .icono.espera { background: var(--warn-soft); color: var(--warn); }
+  .resultado .icono.no { background: var(--err-soft); color: var(--err); }
+  .resultado p { margin: 0 0 12px; }
+  .acciones { display: grid; gap: 10px; margin-top: 16px; }
+  .mis { margin-bottom: 32px; }
+  .mis ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .mis li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; background: var(--accent-soft); }
+  .mis a { white-space: nowrap; font-size: 15px; }
+  .perdido { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .fila { display: flex; gap: 8px; }
+  .fila input { flex: 1; min-width: 0; }
+  .fila .btn { width: auto; }
+  .ok-texto { color: var(--ok); font-size: 14px; }
+  footer { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  footer a { color: var(--muted); display: inline-block; padding: 10px 0; }
+
+  /* Administración */
+  .adm-cab { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+  .adm-cab .quien { color: var(--muted); font-size: 15px; overflow-wrap: anywhere; }
+  .adm-cab .botones { display: flex; gap: 8px; flex-wrap: wrap; }
+  .adm-lista { display: grid; gap: 12px; }
+  details.adm { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+  details.adm[open] { box-shadow: var(--shadow); }
+  details.adm > summary { list-style: none; cursor: pointer; padding: 14px 18px; display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; align-items: center; }
+  details.adm > summary::-webkit-details-marker { display: none; }
+  details.adm > summary .t { font: 600 21px/1.2 var(--display); }
+  .panel h3:focus, .resultado h3:focus, .banda:focus { outline: none; }
+  details.adm > summary .s { color: var(--muted); font-size: 15px; }
+  details.adm > summary .n { grid-row: span 2; font: 700 22px/1 var(--display); font-variant-numeric: tabular-nums; text-align: right; }
+  details.adm > summary .n small { display: block; font: 400 13px var(--text); color: var(--muted); }
+  .chip { display: inline-block; font-size: 13px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--field); color: var(--muted); margin-left: 6px; vertical-align: 2px; }
+  .chip.ok { background: var(--ok-soft); color: var(--ok); } .chip.err { background: var(--err-soft); color: var(--err); } .chip.warn { background: var(--warn-soft); color: var(--warn); }
+  .adm-cuerpo { padding: 0 18px 18px; display: grid; gap: 16px; }
+  .gente { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  .gente li { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 10px 0; border-bottom: 1px solid var(--line); align-items: center; }
+  .gente .nom { font-weight: 600; }
+  .gente .con { font-size: 15px; color: var(--muted); overflow-wrap: anywhere; }
+  .gente .con a { color: var(--muted); display: inline-block; padding: 6px 0; }
+  .gente li.inactiva .nom { text-decoration: line-through; color: var(--muted); font-weight: 400; }
+  .gente .acc { grid-row: span 2; display: flex; gap: 6px; align-items: center; }
+  .subt { font: 600 17px/1.2 var(--display); margin: 0 0 6px; }
+  .adm-botones { display: flex; gap: 8px; flex-wrap: wrap; }
+  .caja { background: var(--field); border-radius: 10px; padding: 16px; display: grid; gap: 12px; }
+  .caja .campo label { color: var(--ink); }
+  .caja input, .caja textarea { background: var(--surface); }
+  .dos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 520px) { .dos { grid-template-columns: 1fr; } }
+  .opciones { display: flex; gap: 8px; flex-wrap: wrap; border: 0; padding: 0; margin: 0; }
+  .opciones legend { font-size: 15px; color: var(--muted); margin-bottom: 6px; padding: 0; }
+  .opciones label { display: flex; gap: 6px; align-items: center; padding: 8px 12px; border: 1px solid var(--line-strong); border-radius: 8px; color: var(--ink); cursor: pointer; background: var(--surface); }
+  .opciones label:has(input:checked) { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+  .opciones input { accent-color: var(--accent); }
+  .ayuda { font-size: 14px; color: var(--muted); margin: 0; }
+  .login { max-width: 440px; margin: 0 auto; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1 id="titulo">Clases de vuelo</h1>
+      <p class="sub" id="subtitulo">Aprende a volar con doble mando: tú llevas la emisora y el instructor puede tomar el control en cualquier momento.</p>
+    </div>
+    <svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="31 38 635 341" role="img" aria-label="UCA&amp;Air">
+  <title>UCA&amp;Air</title>
+  <path fill="#D17319" fill-rule="evenodd" d="M463.2,127.8L462.5,128.4L461.3,128.9L452.8,132.2L445.4,134.8L438.9,137.3L432.6,139.4L427.8,141.4L425.9,141.9L425.2,141.9L424.4,141.8L422.8,141.2L418.0,139.3L411.8,137.2L405.9,134.9L398.3,132.3L392.2,129.9L385.8,127.7L379.7,125.3L371.4,122.4L364.9,119.9L359.3,118.0L353.6,115.7L346.7,113.3L339.5,110.6L332.8,108.3L328.1,106.4L322.9,104.6L315.1,101.7L307.9,99.1L302.3,97.0L295.8,94.7L289.7,92.3L282.8,89.9L275.6,87.2L269.5,85.0L264.9,83.1L257.6,80.5L250.4,77.7L243.9,75.4L236.9,72.6L227.5,69.6L223.1,68.5L216.6,67.4L207.1,66.4L198.8,66.3L193.9,66.5L185.0,67.4L178.9,68.5L174.6,69.5L163.4,72.8L161.2,73.6L152.6,77.2L149.8,78.6L141.9,83.0L135.4,87.3L130.5,90.9L127.9,93.0L123.6,96.7L119.0,101.1L114.4,106.3L112.7,108.3L108.2,114.3L103.4,121.8L99.1,130.2L95.4,139.5L94.2,142.6L93.4,145.3L90.3,156.9L89.3,162.7L88.8,168.0L88.6,172.7L88.6,182.9L88.9,187.8L89.4,192.9L90.4,198.9L92.5,207.1L93.4,210.2L94.3,212.8L95.5,215.8L98.3,222.2L99.7,224.9L103.8,232.0L108.9,239.1L113.4,244.6L118.1,249.6L123.2,254.3L128.9,259.1L135.9,264.2L142.6,268.5L151.8,273.5L156.9,275.9L161.9,278.4L166.5,280.3L171.9,282.7L175.7,284.1L180.7,285.8L185.0,287.5L191.2,289.4L198.9,292.1L206.9,294.6L214.7,297.3L220.8,299.2L227.2,301.6L233.9,303.7L244.3,307.2L249.7,308.9L254.6,310.7L262.4,313.2L268.8,315.5L279.4,318.8L284.2,320.6L290.5,322.5L298.3,325.3L306.0,327.8L313.6,330.4L320.1,332.4L325.4,334.4L326.6,334.9L327.3,335.3L326.3,335.9L325.0,336.4L320.8,337.9L313.3,340.7L307.2,342.8L301.8,345.0L295.9,347.0L291.4,348.7L289.3,349.4L288.4,349.4L287.3,349.2L281.5,347.1L274.5,344.8L269.6,342.9L262.9,340.7L255.0,337.8L247.8,335.5L241.8,333.2L235.3,331.0L229.3,328.8L221.4,326.2L215.2,323.9L208.0,321.5L200.9,318.9L194.2,316.6L186.6,313.9L181.3,312.2L174.8,309.7L165.8,306.7L160.5,304.8L153.2,302.3L144.5,299.0L141.0,297.5L137.8,295.8L132.3,293.0L124.7,288.4L118.3,284.0L111.9,279.1L106.3,274.2L102.6,270.7L98.3,266.3L93.2,260.4L89.0,255.0L86.2,250.9L83.7,247.1L79.5,239.8L75.5,231.7L74.3,229.0L72.5,224.2L69.6,215.7L68.5,211.5L66.3,201.7L65.9,198.7L65.3,195.5L64.9,190.1L64.5,186.3L64.3,181.0L64.4,173.5L64.5,170.4L64.9,166.5L65.3,160.9L65.9,157.8L66.3,154.7L67.0,152.1L67.4,149.6L69.3,141.6L70.0,138.9L73.3,129.4L75.3,124.2L79.0,116.4L80.0,114.6L84.5,106.6L88.9,99.8L94.3,92.7L98.8,87.4L103.4,82.5L108.0,78.1L114.1,72.8L118.5,69.4L121.6,67.2L127.7,63.3L136.9,58.3L145.5,54.2L149.2,52.6L157.8,49.4L161.0,48.4L172.3,45.4L177.6,44.3L183.0,43.4L187.1,43.0L193.6,42.5L201.8,42.5L209.0,42.8L214.2,43.4L219.9,44.3L224.9,45.4L237.2,48.4L240.7,49.3L246.0,51.0L253.4,53.1L260.9,55.6L269.4,58.2L277.1,60.9L282.4,62.6L288.9,65.2L297.6,68.1L303.3,70.3L309.8,72.5L316.2,74.9L321.2,76.6L327.6,79.0L337.4,82.3L342.1,84.2L347.7,86.1L355.8,89.0L362.9,91.4L369.2,93.8L375.0,95.8L381.0,98.1L388.2,100.5L397.0,103.8L402.1,105.5L408.4,107.9L415.3,110.2L422.6,112.9L429.3,115.2L434.5,117.2L440.3,119.2L450.4,122.9L455.7,124.6L461.6,126.9L462.6,127.4ZM394.3,153.3L393.2,154.1L390.2,155.3L381.1,158.5L375.4,160.8L369.4,162.8L362.2,165.6L357.7,167.1L356.6,167.2L355.6,167.1L350.4,165.4L343.7,162.8L337.2,160.6L331.7,158.4L325.0,156.1L317.4,153.2L311.2,151.1L305.5,148.8L301.0,147.3L291.2,143.6L284.5,141.3L279.7,139.4L274.5,137.6L267.4,134.9L259.8,132.2L253.2,129.6L247.7,127.8L242.0,125.6L234.6,123.2L226.9,120.4L220.1,118.2L213.0,115.6L209.7,114.6L207.8,114.2L204.6,114.1L199.6,114.2L194.0,114.8L189.5,115.7L185.8,116.7L178.0,119.6L173.9,121.5L167.1,125.2L165.1,126.4L161.2,129.1L159.8,130.2L155.5,133.8L151.5,137.9L149.9,139.7L145.9,145.0L142.3,150.9L140.4,154.8L138.7,159.1L137.6,162.2L136.5,166.4L135.9,171.0L135.7,175.1L135.8,179.7L136.4,184.4L137.3,188.7L138.5,192.3L140.4,197.3L142.1,201.0L145.4,206.9L147.0,209.3L149.4,212.7L152.0,216.1L156.2,220.9L159.8,224.5L161.5,226.0L162.6,226.7L169.1,230.4L171.6,231.5L177.6,233.5L182.9,235.4L189.5,237.6L197.0,240.3L204.6,242.7L211.1,245.1L216.7,246.9L223.4,249.4L233.4,252.6L238.5,254.5L245.3,256.7L250.8,258.8L259.4,261.6L267.2,264.4L273.1,266.2L279.2,268.5L284.9,270.4L295.9,274.2L301.0,275.8L307.5,278.3L314.0,280.3L320.2,282.6L329.6,285.7L334.5,287.5L341.7,289.8L348.9,292.4L355.8,294.7L363.2,297.3L369.3,299.3L375.1,301.4L381.9,303.7L389.6,306.4L396.7,308.7L397.7,309.1L397.1,309.6L396.2,310.1L392.3,311.7L385.6,314.0L378.7,316.6L371.7,319.1L363.6,322.2L361.2,323.0L360.0,323.3L359.1,323.3L358.1,323.2L353.8,322.0L345.6,319.2L334.3,315.5L329.9,313.9L323.8,312.0L317.8,309.7L311.4,307.6L302.0,304.3L296.2,302.3L290.1,300.0L285.4,298.4L278.9,295.9L269.3,292.5L265.0,290.8L259.5,288.8L252.1,285.9L245.1,283.5L238.5,281.0L232.7,279.0L226.6,276.7L219.6,274.4L212.0,271.8L203.5,269.3L198.5,267.5L188.9,264.6L184.1,262.9L173.5,259.5L162.7,255.6L159.9,254.3L154.5,251.5L150.8,249.4L145.8,246.0L141.2,242.4L138.8,240.4L134.9,236.9L131.8,233.7L127.5,228.6L126.1,226.7L122.7,221.6L121.7,220.1L118.6,213.9L117.0,210.3L115.6,206.7L113.3,199.3L112.4,196.1L111.5,191.3L110.5,181.3L110.4,178.3L110.4,173.6L110.6,170.2L111.3,163.5L111.6,161.5L112.4,158.0L113.4,154.5L115.4,148.5L116.4,145.8L117.5,143.2L119.6,139.2L122.1,134.5L125.6,129.2L127.0,127.2L132.3,120.7L136.9,115.8L141.2,111.8L145.4,108.5L149.1,105.7L155.4,101.5L159.1,99.5L165.8,96.1L168.2,95.1L175.0,92.6L178.4,91.5L182.0,90.6L189.0,89.3L198.1,88.5L200.3,88.4L202.8,88.5L211.6,89.4L216.8,90.5L220.4,91.4L227.1,93.9L233.0,95.8L238.8,98.0L248.5,101.3L253.9,103.4L260.1,105.4L266.1,107.7L273.6,110.2L281.5,113.1L287.8,115.2L293.2,117.3L299.3,119.3L309.0,122.8L314.4,124.6L321.0,127.1L325.7,128.6L332.8,131.2L342.5,134.5L346.7,136.1L353.6,138.5L358.8,140.5L367.6,143.4L374.5,146.0L380.4,147.9L386.4,150.2L393.2,152.5L394.0,152.9ZM328.5,177.1L327.9,177.6L327.1,178.0L323.4,179.5L316.9,181.8L310.8,184.2L303.7,186.6L295.6,189.7L291.3,191.1L290.3,191.3L289.2,191.3L287.6,190.9L283.5,189.5L275.5,186.5L268.4,184.1L262.5,181.8L257.1,180.0L251.1,177.7L241.2,174.3L236.8,172.5L231.3,170.7L223.6,167.7L216.5,165.3L209.8,162.7L203.6,160.7L202.4,160.4L201.0,160.2L197.6,160.2L194.2,160.6L190.3,161.4L188.6,161.9L186.5,162.7L185.0,163.4L183.4,164.3L181.9,165.3L179.6,167.0L178.4,168.0L177.2,169.3L174.7,172.3L172.7,175.6L171.6,178.0L170.7,180.3L169.7,184.1L169.5,185.8L169.3,187.9L169.4,191.9L169.8,195.0L170.3,197.2L170.8,198.7L171.6,200.7L172.6,202.9L174.4,205.9L176.2,208.1L179.5,211.4L180.1,212.3L179.4,212.2L178.5,211.8L174.7,209.9L172.3,208.5L170.1,207.0L167.2,204.6L165.1,202.7L164.0,201.3L161.8,198.5L160.4,196.1L159.4,194.3L158.4,191.7L157.6,189.2L156.3,184.0L155.7,179.4L155.5,176.1L155.7,173.1L156.5,168.3L157.5,164.9L158.7,162.1L160.1,159.7L162.0,157.1L165.0,153.9L168.0,151.3L172.4,148.1L178.1,144.8L181.3,143.2L185.2,141.6L191.4,139.5L195.5,138.6L201.4,137.8L206.3,137.7L210.2,137.8L216.0,138.5L220.1,139.4L224.2,140.6L232.5,143.3L240.0,146.0L245.5,147.8L251.8,150.2L261.4,153.4L266.1,155.2L273.2,157.6L279.8,160.0L286.5,162.2L292.0,164.3L301.6,167.5L306.4,169.3L312.5,171.3L320.2,174.1L327.4,176.5L328.0,176.8ZM45.8,145.5L46.0,146.4L46.0,148.1L44.6,159.7L44.2,165.1L43.9,175.8L44.3,188.7L44.6,192.7L45.3,199.0L46.5,208.2L47.5,213.1L50.5,224.5L52.3,230.2L56.5,240.8L60.8,249.8L65.5,258.2L66.6,259.9L68.7,262.9L70.7,266.1L75.5,272.5L80.0,278.0L85.3,283.7L89.6,288.0L94.4,292.4L99.9,296.9L106.1,301.7L113.3,306.5L120.8,311.0L128.8,315.2L132.7,317.1L135.4,318.2L141.9,320.6L147.4,322.4L155.3,325.2L163.4,327.9L170.0,330.3L175.9,332.1L181.7,334.3L189.8,337.0L197.3,339.7L204.5,342.0L210.5,344.3L216.5,346.2L225.8,349.5L233.1,351.9L237.5,353.6L243.5,355.5L251.2,358.3L255.9,359.8L256.7,360.2L257.2,360.6L256.7,361.0L255.9,361.4L249.6,363.9L242.3,366.5L236.9,368.6L229.3,371.2L222.1,374.0L221.0,374.3L220.0,374.5L219.0,374.4L218.0,374.2L209.1,371.0L201.5,368.5L194.8,366.0L189.5,364.3L183.1,361.9L175.6,359.4L168.1,356.7L161.5,354.5L155.3,352.2L148.2,349.8L140.5,347.0L134.5,345.1L128.9,342.9L125.9,341.9L124.0,341.1L121.6,339.9L112.5,335.0L106.2,331.1L99.5,326.5L93.5,321.8L90.9,319.6L88.7,317.8L82.7,312.1L78.6,307.9L75.6,304.5L69.6,297.2L65.4,291.4L60.8,284.3L56.0,276.3L51.2,266.8L46.4,255.7L42.3,243.5L41.3,240.0L40.2,235.4L38.3,226.2L37.3,220.5L36.4,213.9L35.7,201.6L35.6,192.6L35.7,185.9L36.4,176.8L37.3,171.9L38.3,167.5L40.3,159.9L41.6,155.7L42.4,153.5L45.5,146.1Z"/>
+  <path fill="#126586" fill-rule="evenodd" d="M524.3,347.3L522.9,347.2L520.1,346.4L514.5,344.3L509.7,342.1L506.8,341.0L496.0,336.2L493.0,335.1L488.4,332.9L484.6,331.4L479.5,329.1L474.7,327.1L470.9,325.6L467.0,323.8L461.4,321.7L455.1,318.9L449.7,316.9L444.9,314.8L435.4,311.2L432.1,309.7L426.2,307.6L421.8,305.7L412.6,302.5L407.5,300.5L398.4,297.2L395.1,295.8L387.0,293.0L380.7,290.6L375.7,288.8L370.8,286.7L361.0,283.1L355.0,280.7L349.9,278.9L345.0,276.8L342.0,275.8L336.1,273.7L330.9,271.6L325.0,269.5L318.0,266.8L314.9,265.9L302.9,261.6L298.0,260.0L294.6,258.7L284.0,255.0L280.6,253.7L272.8,251.0L264.3,247.7L259.1,245.9L254.2,243.8L247.8,241.5L239.2,237.8L235.3,236.3L230.4,233.9L226.6,232.2L223.7,230.6L219.9,228.9L217.4,227.6L214.8,226.0L212.7,224.6L209.7,222.9L206.8,221.0L200.7,216.8L199.0,215.5L196.6,213.2L194.5,210.8L192.7,208.1L191.8,206.5L190.5,203.2L189.9,200.4L189.9,199.7L190.0,198.9L190.3,197.5L190.7,196.5L191.5,195.1L192.7,193.9L193.7,193.1L196.5,191.2L197.6,190.7L200.2,189.9L203.8,189.2L206.3,189.0L210.0,189.1L214.1,189.5L221.3,189.8L225.2,190.4L229.1,190.7L232.0,191.3L234.8,191.7L237.2,192.3L239.6,192.7L242.2,193.4L245.9,193.9L253.6,195.7L259.0,197.3L265.3,198.9L271.2,200.6L275.9,202.4L282.6,204.5L287.0,206.3L297.0,210.0L305.9,213.9L310.9,216.4L317.1,219.2L318.8,220.0L321.0,221.3L325.4,223.4L342.8,233.3L350.0,237.2L354.6,239.9L359.2,242.3L364.5,245.3L367.9,247.1L370.4,248.6L378.6,252.9L381.7,254.8L385.8,257.0L388.2,258.6L392.9,261.1L395.1,262.5L400.9,265.8L405.4,268.7L408.2,270.3L413.2,273.5L416.3,275.3L421.1,278.5L424.1,280.2L426.0,281.5L432.4,285.4L436.6,288.2L440.2,290.4L451.2,297.6L454.5,299.6L458.2,302.1L463.7,305.6L467.4,308.1L469.5,309.3L471.2,310.6L474.2,312.4L481.4,317.1L483.4,318.4L485.3,319.7L491.3,323.5L494.1,325.5L497.8,327.7L512.5,337.6L515.2,339.6L519.0,342.1L523.4,345.6L524.0,346.5Z"/>
+  <path fill="var(--ink)" fill-rule="evenodd" d="M505.4,191.3L503.3,191.4L494.1,191.4L490.8,191.3L490.6,190.0L490.6,184.9L490.4,183.3L489.8,181.4L489.2,178.8L488.4,177.1L487.7,176.1L486.7,175.1L485.6,174.6L484.1,174.4L481.6,174.4L480.6,174.6L479.7,175.0L478.7,175.8L477.9,176.9L476.9,178.9L475.8,182.1L475.4,184.3L474.7,186.4L474.6,188.8L474.5,207.1L474.6,221.5L474.8,222.7L475.4,224.9L475.8,227.6L476.8,230.7L477.1,231.4L478.6,233.5L479.3,234.3L480.8,235.1L482.2,235.4L483.8,235.4L484.6,235.3L485.2,235.1L486.2,234.4L487.8,232.7L488.5,231.7L489.3,230.2L490.5,225.4L490.6,223.6L490.7,216.4L490.8,214.7L491.9,214.5L493.8,214.5L503.0,214.5L505.3,214.6L505.5,215.5L505.6,216.9L505.6,223.5L505.4,224.5L504.8,226.5L504.5,229.1L503.8,231.5L503.4,233.3L502.4,236.7L502.0,237.7L501.1,239.3L500.1,240.7L498.7,242.8L496.9,244.7L495.5,245.9L493.8,246.9L489.5,249.1L488.5,249.4L487.5,249.5L479.3,249.5L477.2,249.4L476.4,249.2L475.4,248.9L472.1,247.2L468.6,244.9L467.6,243.9L467.0,243.0L465.4,240.1L464.3,238.5L463.9,237.8L462.8,234.7L461.8,231.2L461.5,228.6L460.7,226.1L460.5,221.6L459.8,219.6L459.6,218.7L459.6,215.5L459.6,191.2L459.8,190.3L460.5,188.3L460.7,183.8L461.5,181.3L461.8,178.5L462.4,176.6L462.9,174.1L464.0,171.9L465.2,170.1L466.1,168.6L468.1,165.7L468.6,165.2L471.9,162.8L474.3,161.7L477.1,160.7L478.4,160.5L480.1,160.4L486.1,160.4L487.5,160.4L488.6,160.6L492.5,161.8L495.9,163.6L497.4,164.7L499.9,167.4L502.3,171.0L503.4,174.4L503.8,176.4L504.5,179.0L504.7,183.1L504.9,183.8L505.4,185.4L505.6,186.6L505.6,189.7ZM400.8,161.6L402.5,161.4L405.8,161.4L413.3,161.4L415.4,161.6L415.5,162.8L415.5,164.8L415.5,223.1L415.6,225.7L415.8,227.0L416.7,229.8L417.7,232.6L418.1,233.4L419.1,234.2L420.6,235.0L421.7,235.4L423.1,235.5L424.4,235.4L425.8,234.9L427.2,234.1L428.1,233.3L428.8,232.2L429.3,230.9L429.7,228.6L430.3,226.8L430.5,225.9L430.6,164.6L430.6,162.6L430.7,161.6L432.4,161.4L437.1,161.4L443.3,161.4L445.4,161.6L445.5,162.6L445.5,164.1L445.5,221.1L445.5,225.6L445.4,227.2L444.7,229.5L444.4,232.5L443.8,234.4L443.1,237.0L442.2,239.0L440.0,242.4L439.3,243.2L438.2,244.4L436.4,246.0L434.4,247.1L430.0,249.3L429.1,249.5L427.8,249.5L419.3,249.5L417.4,249.5L416.5,249.3L415.8,249.1L412.0,247.3L410.2,246.3L409.2,245.6L407.6,244.1L406.3,242.7L405.7,241.8L404.9,240.2L403.2,236.8L402.7,235.6L401.7,232.2L401.4,228.2L400.8,225.2L400.7,223.6L400.6,164.4L400.7,162.6ZM551.3,247.6L550.9,246.8L550.0,243.8L549.5,241.3L548.9,239.4L548.5,236.5L547.8,234.0L547.5,230.5L547.1,229.6L546.6,228.9L546.0,228.3L545.4,227.9L544.0,227.6L542.1,227.5L532.8,227.5L532.1,227.5L531.4,228.9L530.9,230.1L530.4,232.6L529.8,234.7L529.4,237.6L528.9,239.3L528.4,241.6L527.8,243.7L527.4,246.3L527.1,247.0L526.7,247.6L526.3,247.9L525.6,248.2L524.1,248.4L513.9,248.4L512.5,248.3L511.7,248.1L511.8,247.5L512.4,245.8L512.9,243.5L513.5,241.4L513.8,239.0L514.5,236.4L514.8,233.9L515.5,231.4L515.9,228.5L517.4,223.8L517.9,221.5L518.4,219.6L518.8,216.0L519.5,213.4L519.9,210.5L521.4,205.8L521.9,203.5L522.5,201.4L522.8,199.5L523.4,197.6L523.9,193.5L524.4,191.6L524.9,189.3L525.5,187.4L525.9,185.3L526.5,183.4L526.9,181.3L527.5,179.4L527.8,176.7L528.5,174.2L528.9,171.5L529.5,169.4L529.9,167.3L530.4,165.6L530.9,163.5L531.2,162.8L531.5,162.4L531.9,162.0L533.0,161.6L535.1,161.4L544.6,161.4L547.1,161.4L548.5,161.6L548.8,164.2L549.5,167.0L549.8,170.2L550.4,172.5L550.8,175.2L551.4,177.3L551.9,179.6L552.5,181.8L552.8,184.2L553.5,186.5L553.8,189.2L554.5,191.5L554.8,194.4L555.5,196.8L555.8,199.2L556.5,201.8L556.9,204.4L558.5,209.5L558.8,212.4L559.5,215.0L559.8,218.4L560.5,220.5L560.9,222.6L561.5,224.6L561.9,227.4L562.4,229.3L562.9,231.6L563.5,233.8L563.8,237.4L564.5,239.8L564.8,242.4L565.4,244.6L565.6,246.1L565.6,247.4L565.4,248.3L563.0,248.4L553.9,248.4L552.3,248.1ZM543.5,213.3L543.7,211.7L543.6,209.4L543.5,208.3L542.8,206.0L542.5,201.5L541.8,199.2L541.5,196.5L540.9,194.2L540.4,190.9L539.6,189.3L539.2,188.8L538.8,188.6L538.5,191.4L537.9,193.3L537.4,195.4L536.9,197.3L536.5,200.1L535.8,202.7L535.5,206.9L534.9,209.3L534.7,210.4L534.7,211.9L534.8,213.3L536.2,213.5L539.1,213.5L541.9,213.5ZM514.6,281.3L514.9,282.2L516.7,285.8L518.5,288.5L521.8,294.9L522.8,296.5L523.2,296.4L523.6,296.1L524.2,295.3L525.4,292.0L525.6,290.8L525.7,287.3L525.9,285.8L528.1,285.7L530.4,285.8L530.6,287.1L530.6,289.1L530.6,292.8L530.5,294.4L529.3,298.2L527.1,302.7L526.8,303.6L527.4,304.3L529.0,307.3L530.6,309.7L532.3,313.1L532.5,313.7L532.6,314.3L531.3,314.6L529.1,314.7L527.4,314.6L526.2,314.3L525.8,314.0L525.3,313.5L523.5,310.4L523.0,309.9L522.6,309.6L522.1,309.9L521.0,311.2L519.5,312.4L517.8,313.9L516.6,314.7L515.2,315.3L510.3,316.4L509.4,316.4L507.9,315.9L505.8,315.5L504.7,315.0L502.0,313.3L501.3,312.7L500.5,312.0L498.2,308.3L496.9,305.2L496.7,304.5L496.4,302.5L495.9,300.6L495.7,299.1L495.9,297.8L496.4,295.6L496.9,293.2L497.9,291.1L500.1,287.0L501.1,285.7L504.8,281.9L505.3,281.0L505.5,280.0L505.5,279.0L505.2,277.8L502.4,272.1L502.0,271.0L501.8,270.2L501.6,268.6L501.6,264.3L501.7,262.6L501.9,261.5L502.3,260.2L503.1,258.8L503.9,257.8L505.5,256.2L506.4,255.4L507.3,254.8L508.9,254.0L510.0,253.7L512.8,253.6L514.8,253.8L517.0,254.7L519.2,256.0L520.5,257.1L521.2,258.1L522.2,261.0L522.5,262.0L522.6,264.3L522.6,268.7L522.3,270.0L521.4,272.8L520.9,273.6L518.8,276.7L515.4,280.2ZM602.9,272.3L602.7,268.3L602.7,258.1L602.8,255.8L604.1,255.6L606.1,255.6L614.5,255.6L616.6,255.8L616.7,257.4L616.7,262.1L616.7,270.3L616.6,272.4L614.6,272.6L605.8,272.6L604.0,272.5ZM536.7,345.3L536.8,344.0L537.5,341.4L537.8,338.2L538.5,335.6L538.9,332.8L540.5,327.8L540.9,325.8L541.5,323.7L541.9,321.8L542.4,319.8L542.9,315.8L543.5,313.8L543.9,311.6L544.5,309.8L544.9,307.6L545.5,305.8L545.9,303.5L546.5,301.6L546.9,299.0L547.5,296.4L547.9,293.6L548.4,291.8L548.9,289.5L549.4,287.8L549.9,285.5L550.4,283.8L550.9,281.8L551.5,279.6L552.0,275.6L552.5,273.6L552.9,271.5L553.5,269.6L553.9,267.5L554.5,265.6L554.9,263.5L555.5,261.6L555.9,259.5L556.2,258.6L557.1,256.6L573.2,256.6L573.5,257.2L574.5,260.6L574.9,263.6L575.5,265.5L575.9,267.6L576.5,269.6L576.9,271.6L577.5,273.8L577.8,276.4L578.5,279.2L578.9,282.6L579.5,284.6L579.9,286.7L580.4,288.6L580.9,290.6L581.5,292.8L581.9,295.4L582.5,297.8L582.9,300.7L583.5,303.0L583.9,305.6L584.5,308.0L584.9,310.6L585.5,312.8L585.9,315.6L586.5,317.6L586.9,319.7L587.5,322.0L587.8,325.4L588.5,328.0L588.9,330.6L589.5,332.8L590.0,335.1L591.5,339.6L591.8,342.4L592.3,344.2L592.3,344.6L579.9,344.8L578.4,345.0L577.1,345.6L576.2,343.6L575.9,342.6L575.5,338.8L574.9,336.4L574.5,333.5L573.9,331.6L573.5,329.3L572.9,327.4L572.5,324.8L570.0,324.7L559.8,324.7L558.2,324.8L557.1,324.9L556.6,325.1L556.0,326.1L555.5,328.6L554.8,330.7L554.5,334.4L553.9,336.5L553.4,338.8L552.9,340.8L552.5,343.6L552.1,344.6L551.6,345.3L549.6,344.9L548.5,344.8L542.3,344.7L539.2,344.8L537.1,345.3ZM507.7,260.8L507.5,262.4L506.9,264.3L506.8,265.1L506.9,266.1L507.5,267.8L507.7,269.5L508.2,270.8L510.1,274.4L511.1,275.6L511.6,275.5L512.4,275.1L513.1,274.5L515.7,270.5L516.4,269.0L517.3,266.0L517.5,265.1L517.4,264.3L516.8,262.8L515.9,261.4L514.9,260.4L514.0,259.8L512.5,259.6L511.0,259.6L509.8,259.9ZM633.0,344.6L632.8,343.3L632.8,340.6L632.8,281.1L632.9,277.8L633.6,277.7L634.7,277.6L644.3,277.6L647.0,277.2L647.4,277.4L647.6,277.6L648.1,279.6L648.8,279.1L650.4,277.6L651.1,277.1L651.9,276.7L654.4,276.0L655.7,275.7L657.6,275.7L659.2,275.8L660.4,276.1L661.6,276.8L661.8,278.0L661.8,291.0L661.6,292.7L661.3,293.6L659.9,293.5L657.7,292.8L656.3,292.7L654.2,292.7L653.3,292.9L652.4,293.3L651.0,294.1L650.0,295.1L648.5,298.1L647.9,299.8L647.8,300.9L647.8,302.6L647.8,342.6L647.7,344.3L647.6,345.5L646.0,345.0L644.5,344.8L635.1,344.7ZM603.0,344.6L602.8,343.2L602.7,340.6L602.7,281.3L602.9,277.8L603.7,277.7L605.2,277.6L614.0,277.6L616.0,277.7L616.6,277.8L616.7,280.4L616.7,341.1L616.6,344.5L615.4,344.7L613.3,344.7L605.1,344.7ZM569.7,308.1L569.6,306.8L568.9,304.4L568.5,301.5L567.9,299.4L567.5,296.5L566.9,294.4L566.6,291.0L565.9,288.4L565.5,285.8L565.2,284.9L564.6,284.4L564.2,284.9L563.9,285.6L563.5,288.4L562.8,290.7L562.5,293.4L561.8,295.7L561.5,298.4L560.9,300.3L560.5,302.6L559.8,304.7L559.7,306.3L559.8,307.7L560.2,308.6L560.9,309.2L561.8,309.5L563.1,309.6L566.1,309.6L567.6,309.5L568.8,309.0ZM519.7,304.1L519.3,303.0L517.9,300.1L517.3,299.0L515.8,296.8L512.5,290.3L511.1,288.4L510.1,286.6L509.3,285.6L508.8,286.0L507.9,286.8L506.6,288.2L505.9,289.0L504.0,292.0L502.8,295.3L502.6,297.2L502.7,300.2L503.0,301.5L503.8,303.7L504.0,304.3L504.7,305.1L506.0,306.5L507.1,307.6L507.9,308.2L508.6,308.5L509.4,308.6L512.1,308.7L514.2,308.6L514.8,308.4L515.5,308.1L516.7,307.1Z"/>
+</svg>
+  </header>
+
+  <noscript><p class="banda error">Esta página necesita JavaScript para funcionar. Actívalo o prueba con otro navegador.</p></noscript>
+  <p class="banda prueba" id="modo-prueba" hidden>Modo de prueba: la página aún no está conectada a la hoja de reservas. Lo que hagas aquí no se guarda.</p>
+  <p class="banda info" id="aviso" hidden></p>
+  <div class="datos" id="datos" hidden></div>
+
+<!-- Vista de una reserva concreta (enlace del correo) -->
+  <section id="vista-reserva" hidden>
+    <div class="panel" style="max-width:480px;margin:0 auto;position:static">
+      <div id="reserva-contenido"><div class="esqueleto"></div></div>
+    </div>
+    <p style="text-align:center;margin-top:20px"><a class="enlace" href="./" id="volver">Ver el calendario de clases</a></p>
+  </section>
+
+  <!-- Vista principal -->
+  <div class="layout" id="vista-principal">
+    <section>
+      <div class="mis" id="mis" hidden>
+        <h2>Tus reservas</h2>
+        <ul id="mis-lista"></ul>
+      </div>
+      <h2>Próximas clases</h2>
+      <div id="calendario">
+        <div class="clases"><div class="esqueleto"></div><div class="esqueleto"></div><div class="esqueleto"></div></div>
+      </div>
+    </section>
+
+    <aside class="panel" id="panel">
+      <div id="panel-form">
+        <h3 id="panel-titulo" tabindex="-1">Elige un día</h3>
+        <p class="elegida" id="panel-elegida">Elige una clase del calendario para apuntarte.</p>
+        <form id="form" novalidate action="javascript:void 0">
+          <div id="perfil" class="perfil" hidden>
+            <div><span id="perfil-nombre"></span><small id="perfil-datos"></small></div>
+            <span><button type="button" class="enlace" id="perfil-cambiar">Cambiar</button> · <button type="button" class="enlace" id="perfil-noyo">No soy yo</button></span>
+          </div>
+          <div id="campos">
+            <div class="campo">
+              <label for="nombre">Nombre y apellidos</label>
+              <input id="nombre" name="nombre" type="text" autocomplete="name" maxlength="80" aria-describedby="aviso-nombre">
+              <small class="aviso" id="aviso-nombre"></small>
+            </div>
+            <div class="campo" style="margin-top:14px">
+              <label for="correo">Correo</label>
+              <input id="correo" name="correo" type="email" autocomplete="email" inputmode="email" maxlength="120" spellcheck="false" autocapitalize="off" aria-describedby="aviso-correo">
+              <small class="aviso" id="aviso-correo"></small>
+              <small class="sugerencia" id="sugerencia" role="status" hidden></small>
+            </div>
+            <div class="campo" style="margin-top:14px">
+              <label for="telefono">Teléfono</label>
+              <input id="telefono" name="telefono" type="tel" autocomplete="tel" inputmode="tel" maxlength="25" aria-describedby="aviso-telefono">
+              <small class="aviso" id="aviso-telefono"></small>
+            </div>
+          </div>
+          <div class="trampa" aria-hidden="true"><label>Web <input id="web" type="text" tabindex="-1" autocomplete="off"></label></div>
+          <label class="check"><input type="checkbox" id="recordar" checked> Recordar mis datos en este dispositivo</label>
+          <small class="aviso" id="aviso-general" role="alert"></small>
+          <button class="btn primary" id="enviar" type="submit" disabled>Elige un día</button>
+          <p class="pie" id="pie"></p>
+        </form>
+        <div class="perdido">
+          <button type="button" class="enlace" id="abrir-perdido" aria-expanded="false" aria-controls="form-perdido">¿Has perdido el enlace de tu reserva?</button>
+          <form id="form-perdido" hidden novalidate action="javascript:void 0" style="margin-top:10px">
+            <label for="correo-perdido">Tu correo (te reenviamos los enlaces de tus reservas)</label>
+            <div class="fila">
+              <input id="correo-perdido" type="email" autocomplete="email" inputmode="email" spellcheck="false" autocapitalize="off" placeholder="tu@correo.com">
+              <button class="btn secondary" id="enviar-perdido" type="submit">Enviar</button>
+            </div>
+            <small class="aviso" id="aviso-perdido"></small>
+            <small class="ok-texto" id="ok-perdido" role="status"></small>
+          </form>
+        </div>
+      </div>
+      <div id="panel-resultado" class="resultado" hidden></div>
+    </aside>
+  </div>
+
+  <!-- Administración (?admin) -->
+  <section id="vista-admin" hidden>
+    <div class="panel login" id="adm-login" hidden>
+      <h3>Acceso de organización</h3>
+      <p class="elegida">Escribe tu correo. Si tiene permiso, te llegará un enlace para entrar en este navegador.</p>
+      <form id="form-login" novalidate action="javascript:void 0">
+        <div class="campo">
+          <label for="correo-login">Correo</label>
+          <input id="correo-login" type="email" autocomplete="email" inputmode="email" spellcheck="false" autocapitalize="off" aria-describedby="aviso-login">
+          <small class="aviso" id="aviso-login" role="alert"></small>
+          <small class="ok-texto" id="ok-login" role="status"></small>
+        </div>
+        <button class="btn primary" id="enviar-login" type="submit">Enviarme el enlace</button>
+      </form>
+    </div>
+    <div class="panel login" id="adm-entrar" hidden>
+      <h3>Entrar en la administración</h3>
+      <p class="elegida">Pulsa para entrar con el enlace que te ha llegado por correo.</p>
+      <label class="check"><input type="checkbox" id="adm-recordar"> Mantener la sesión abierta en este dispositivo durante 14 días (solo si es tuyo)</label>
+      <small class="aviso" id="aviso-entrar" role="alert"></small>
+      <button class="btn primary" id="adm-entrar-btn" type="button">Entrar</button>
+    </div>
+    <div id="adm-panel" hidden>
+      <div class="adm-cab">
+        <div class="quien" id="adm-quien"></div>
+        <div class="botones">
+          <a class="btn secondary peq" id="adm-hoja" href="#" target="_blank" rel="noopener">Abrir la hoja</a>
+          <button class="btn secondary peq" id="adm-recargar" type="button">Actualizar</button>
+          <button class="btn secondary peq" id="adm-salir" type="button">Salir</button>
+          <button class="btn secondary peq" id="adm-salir-todo" type="button">Salir en todos los dispositivos</button>
+        </div>
+      </div>
+      <p class="banda error" id="adm-avisos" hidden></p>
+      <p class="banda info" id="adm-msg" role="status" hidden></p>
+      <div id="adm-lista" class="adm-lista"><div class="esqueleto"></div><div class="esqueleto"></div></div>
+    </div>
+  </section>
+
+  <footer id="pie-pagina">
+    <span>UCA&amp;Air · Asociación de aeromodelismo de la Universidad de Cádiz</span>
+    <a href="?admin" id="enlace-admin">Acceso para la organización</a>
+  </footer>
+</main>
+
+<script src="config.js?v=1"></script>
+<script>
+"use strict";
+(function () {
+  const C = window.CONFIG || {};
+  const API = String(C.api || "").trim();
+  const PRUEBA = !API;
+  const $ = (id) => document.getElementById(id);
+  const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+  const DIAS_C = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+  const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
+  // ── Almacenamiento local (puede fallar en modo privado) ─────
+  const guardado = {
+    leer(k, def) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch (_) { return def; } },
+    poner(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} },
+    quitar(k) { try { localStorage.removeItem(k); } catch (_) {} },
+  };
+
+  // ── Fechas ──────────────────────────────────────────────────
+  function partes(iso) { const [y, m, d] = iso.split("-").map(Number); return { y, m, d, dow: new Date(Date.UTC(y, m - 1, d)).getUTCDay() }; }
+  function fechaLarga(iso) { const p = partes(iso); return `${DIAS[p.dow]} ${p.d} de ${MESES[p.m - 1]}`; }
+  function capital(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function cierreTexto(isoCierre) {
+    const d = new Date(isoCierre);
+    try {
+      const dia = d.toLocaleDateString("es-ES", { timeZone: "Europe/Madrid", weekday: "long", day: "numeric" });
+      const hora = d.toLocaleTimeString("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" });
+      return dia.replace(",", "") + " a las " + hora;
+    } catch (_) { return d.toLocaleString(); }
+  }
+
+  // ── Validación (la definitiva la hace el servidor) ──────────
+  const limpiar = (s) => String(s || "").normalize("NFC").replace(/[​-‍⁠﻿]/g, "").replace(/\s+/g, " ").trim();
+  const validar = {
+    nombre(v) {
+      const s = limpiar(v);
+      if (!s) return "Escribe tu nombre y apellidos.";
+      if (!/^[\p{L}][\p{L}\p{M}'’ .\-]*$/u.test(s)) return "Solo letras, espacios, guiones y apóstrofos.";
+      if (/\p{L}{2,}\.|\.\p{L}/u.test(s)) return "Sin puntos, salvo en iniciales («J. Pérez»).";
+      if (s.split(" ").filter((p) => /\p{L}{2,}/u.test(p)).length < 2) return "Escribe nombre y al menos un apellido.";
+      return "";
+    },
+    correo(v) {
+      const s = limpiar(v).replace(/\s/g, "").toLowerCase();
+      if (!s) return "Escribe tu correo.";
+      if (!/^[a-z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*\.[a-z]{2,}$/.test(s) || /\.\.|^\.|\.@/.test(s)) return "Ese correo no parece válido. Revísalo (p. ej. nombre@gmail.com).";
+      return "";
+    },
+    telefono(v) {
+      let s = limpiar(v).replace(/[\s.\-()\/]/g, "");
+      if (!s) return "Escribe tu teléfono.";
+      if (s.startsWith("00")) s = "+" + s.slice(2);
+      if (/^\+34/.test(s)) return /^\+34[6789]\d{8}$/.test(s) ? "" : "Debe tener 9 cifras después del +34.";
+      if (/^\d+$/.test(s)) return /^(34)?[6789]\d{8}$/.test(s) ? "" : "Debe tener 9 cifras (o empezar por + si no es español).";
+      return /^\+[1-9]\d{7,14}$/.test(s) ? "" : "Ese teléfono no parece válido.";
+    },
+  };
+
+  // Correos mal escritos frecuentes
+  const DOMINIOS = { "gmial.com": "gmail.com", "gmai.com": "gmail.com", "gmal.com": "gmail.com", "gamil.com": "gmail.com", "gmail.co": "gmail.com", "gmail.con": "gmail.com", "gmail.es": "gmail.com", "gnail.com": "gmail.com",
+    "hotmial.com": "hotmail.com", "hotmai.com": "hotmail.com", "hotmail.con": "hotmail.com", "hotmal.com": "hotmail.com", "hotmail.co": "hotmail.com",
+    "outlok.com": "outlook.com", "outlook.con": "outlook.com", "outllok.com": "outlook.com", "yahoo.con": "yahoo.com", "yaho.com": "yahoo.com",
+    "alum.uca.es": "alum.uca.es", "alumn.uca.es": "alum.uca.es", "alumnos.uca.es": "alum.uca.es", "uca.com": "uca.es", "alum.uca.com": "alum.uca.es" };
+  function sugerirCorreo(v) {
+    const s = limpiar(v).replace(/\s/g, "").toLowerCase();
+    const at = s.lastIndexOf("@"); if (at < 1) return "";
+    const dom = s.slice(at + 1), bueno = DOMINIOS[dom];
+    return bueno && bueno !== dom ? s.slice(0, at + 1) + bueno : "";
+  }
+
+  // ── Comunicación con el servidor ────────────────────────────
+  function idUnico() {
+    if (crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "x" + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+  }
+  async function pedir(datos, { reintentos = 1, espera = 30000 } = {}) {
+    if (PRUEBA) return demo(datos);
+    let ultimo;
+    for (let i = 0; i <= reintentos; i++) {
+      const ctrl = new AbortController();
+      const reloj = setTimeout(() => ctrl.abort(), espera);
+      try {
+        const opciones = datos.accion === "clases"
+          ? { method: "GET", signal: ctrl.signal, cache: "no-store" }
+          : { method: "POST", body: JSON.stringify(datos), signal: ctrl.signal, cache: "no-store" }; // text/plain: sin preflight CORS
+        const url = datos.accion === "clases" ? API + (API.includes("?") ? "&" : "?") + "accion=clases&t=" + Date.now() : API;
+        const r = await fetch(url, opciones);
+        clearTimeout(reloj);
+        const texto = await r.text();
+        let j;
+        try { j = JSON.parse(texto); } catch (_) { throw Object.assign(new Error("respuesta"), { tipo: "respuesta" }); }
+        return j;
+      } catch (e) {
+        clearTimeout(reloj);
+        ultimo = e;
+        if (i < reintentos) await new Promise((ok) => setTimeout(ok, 1500 * (i + 1)));
+      }
+    }
+    const red = { ok: false, red: true, sinSalir: navigator.onLine === false };
+    red.error = ultimo && ultimo.tipo === "respuesta"
+      ? "El servidor ha respondido algo inesperado. Recarga la página y, si sigue, avisa a la organización."
+      : navigator.onLine === false ? "No tienes conexión a internet." : "No hemos podido contactar con el servidor.";
+    return red;
+  }
+
+  // ── Estado ──────────────────────────────────────────────────
+  let datos = null;            // respuesta de «clases»
+  let elegida = null;          // fecha elegida
+  let idPeticion = idUnico();  // se mantiene en los reintentos de una misma reserva
+  let enviando = false;
+  let perfil = guardado.leer("perfil", null);
+  let mias = guardado.leer("misReservas", []).filter((r) => r && r.fecha && r.clave);
+
+  // ── Calendario ──────────────────────────────────────────────
+  async function cargar() {
+    const r = await pedir({ accion: "clases" });
+    if (!r.ok) {
+      if (!datos) $("calendario").innerHTML = `<div class="banda error">${esc(r.error || "No se ha podido cargar el calendario.")} <button class="enlace" id="reintentar">Reintentar</button></div>`;
+      const b = $("reintentar"); if (b) b.onclick = () => { $("calendario").innerHTML = '<div class="clases"><div class="esqueleto"></div></div>'; cargar(); };
+      return;
+    }
+    datos = r;
+    if (r.aviso) { $("aviso").textContent = r.aviso; $("aviso").hidden = false; } else $("aviso").hidden = true;
+    pintarDatos();
+    pintarCalendario();
+    pintarMias();
+    pintarPanel();
+  }
+
+  function pintarDatos() {
+    const pil = (datos.clases[0] && datos.clases[0].pilotos) || [];
+    const trozos = [];
+    if (datos.lugar) trozos.push(`Lugar: <b>${esc(datos.lugar)}</b>`);
+    if (datos.cierreHoras) trozos.push(`Se puede reservar hasta ${datos.cierreHoras} h antes`);
+    if (datos.maximo) trozos.push(`Máximo ${datos.maximo} reserva${datos.maximo === 1 ? "" : "s"} pendiente${datos.maximo === 1 ? "" : "s"} por persona`);
+    $("datos").innerHTML = trozos.map((t) => `<span>${t}</span>`).join("");
+    $("datos").hidden = !trozos.length;
+  }
+
+  function textoEstado(c) {
+    const libres = Math.max(0, c.plazas - c.ocupadas);
+    switch (c.estado) {
+      case "abierta": return `<span class="t-abierta">${libres} plaza${libres === 1 ? " libre" : "s libres"}</span>`;
+      case "espera": return `<span class="t-espera">Completa · lista de espera${c.enEspera ? " (" + c.enEspera + ")" : ""}</span>`;
+      case "completa": return `<span class="t-completa">Completa</span>`;
+      case "cerrada": return `<span class="t-cerrada">Reservas cerradas</span>`;
+      case "cancelada": return `<span class="t-cancelada">Sin clase</span>`;
+    }
+    return "";
+  }
+
+  function pintarCalendario() {
+    const cont = $("calendario");
+    if (!datos.clases.length) { cont.innerHTML = '<div class="vacio">Ahora mismo no hay clases programadas. Vuelve a mirar más adelante.</div>'; return; }
+    let html = "", mesActual = "";
+    const misFechas = new Map(misVisibles().map((m) => [m.fecha, m.estado]));
+    for (const c of datos.clases) {
+      const p = partes(c.fecha), mes = MESES[p.m - 1] + " " + p.y;
+      if (mes !== mesActual) { if (mesActual) html += "</div>"; html += `<div class="mes">${mes}</div><div class="clases">`; mesActual = mes; }
+      const reservable = c.estado === "abierta" || c.estado === "espera";
+      const puntos = c.estado === "cancelada" || c.plazas > 12 ? "" :
+        `<div class="asientos" aria-hidden="true">${Array.from({ length: c.plazas }, (_, i) => `<i class="${i < c.ocupadas ? "ocupado" : ""}"></i>`).join("")}</div>`;
+      const extra = c.estado === "cancelada" ? (c.nota || "Clase cancelada") :
+        [c.pilotos && c.pilotos.length ? (c.pilotos.length > 1 ? "Instructores: " : "Instructor: ") + c.pilotos.join(", ") : "", c.nota].filter(Boolean).join(" · ");
+      html += `<button type="button" class="clase ${c.estado}" data-fecha="${c.fecha}" aria-pressed="${elegida === c.fecha}" ${reservable ? "" : 'aria-disabled="true"'}>
+        <div class="fecha" aria-hidden="true"><div class="dow">${DIAS_C[p.dow]}</div><div class="num">${p.d}</div></div>
+        <span class="sr">${esc(capital(fechaLarga(c.fecha)))}.</span>
+        <div class="info"><div class="hora">${c.inicio} – ${c.fin}</div><div class="extra">${esc(extra)}</div>${misFechas.has(c.fecha) && c.estado !== "cancelada" ? `<span class="mia">${misFechas.get(c.fecha) === "espera" ? "En lista de espera" : "✓ Tienes plaza"}</span>` : ""}</div>
+        <div class="estado">${puntos}${textoEstado(c)}</div>
+      </button>`;
+    }
+    cont.innerHTML = html + "</div>";
+    cont.querySelectorAll(".clase").forEach((b) => b.addEventListener("click", () => { if (b.getAttribute("aria-disabled") !== "true") elegir(b.dataset.fecha); }));
+  }
+
+  function elegir(fecha) {
+    if (enviando) { $("pie").textContent = "Espera a que termine la reserva en curso."; return; }
+    elegida = fecha;
+    idPeticion = idUnico();
+    $("panel-resultado").hidden = true; $("panel-form").hidden = false;
+    document.querySelectorAll(".clase").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.fecha === fecha)));
+    pintarPanel();
+    ponerAviso("general", "");
+    if (window.matchMedia("(max-width: 900px)").matches) $("panel").scrollIntoView({ behavior: "smooth", block: "start" });
+    const primero = perfil ? $("enviar") : ["nombre", "correo", "telefono"].map($).find((i) => !i.value);
+    if (primero && !window.matchMedia("(max-width: 900px)").matches) primero.focus({ preventScroll: true });
+  }
+
+  function claseElegida() { return datos && elegida ? datos.clases.find((c) => c.fecha === elegida) : null; }
+
+  function pintarPanel() {
+    const c = claseElegida(), b = $("enviar");
+    if (!c || !(c.estado === "abierta" || c.estado === "espera")) {
+      if (c) elegida = null;
+      $("panel-titulo").textContent = "Elige un día";
+      $("panel-elegida").textContent = "Elige una clase del calendario para apuntarte.";
+      b.disabled = true; b.textContent = "Elige un día"; $("pie").textContent = "";
+      return;
+    }
+    $("panel-titulo").textContent = capital(fechaLarga(c.fecha));
+    $("panel-elegida").textContent = `De ${c.inicio} a ${c.fin}` + (c.pilotos && c.pilotos.length ? ` con ${c.pilotos.join(" y ")}` : "");
+    b.disabled = enviando;
+    b.textContent = enviando ? "Enviando…" : c.estado === "espera" ? "Apuntarme a la lista de espera" : "Reservar plaza";
+    $("pie").textContent = c.estado === "espera"
+      ? "La clase está llena. Si alguien cancela entrarás solo, por orden, y te avisaremos por correo."
+      : `Te llegará un correo de confirmación con un enlace para cancelar. Puedes reservar hasta el ${cierreTexto(c.cierre)}.`;
+  }
+
+  // ── Mis reservas (guardadas en este dispositivo) ────────────
+  // Solo las reservas de la persona cuyo perfil está guardado (por si el dispositivo es compartido)
+  function misVisibles() { return perfil && perfil.correo ? mias.filter((m) => !m.correo || m.correo === perfil.correo) : mias; }
+  function pintarMias() {
+    const fechas = new Map(((datos && datos.clases) || []).map((c) => [c.fecha, c]));
+    const hoyIso = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
+    mias = mias.filter((m) => m.fecha >= hoyIso);
+    guardado.poner("misReservas", mias);
+    const lista = misVisibles().slice().sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
+    $("mis").hidden = !lista.length;
+    $("mis-lista").innerHTML = lista.map((m) => {
+      const c = fechas.get(m.fecha);
+      const cancelada = c && c.estado === "cancelada";
+      return `<li><span><b>${esc(capital(fechaLarga(m.fecha)))}</b>${c ? ` · ${c.inicio}–${c.fin}` : ""}${m.estado === "espera" ? " · en lista de espera" : ""}${cancelada ? ' · <span style="color:var(--err)">clase cancelada</span>' : ""}</span>
+        <a href="?reserva=${encodeURIComponent(m.clave)}" aria-label="Ver o cancelar la reserva del ${esc(fechaLarga(m.fecha))}">Ver o cancelar</a></li>`;
+    }).join("");
+  }
+  async function comprobarMias() {
+    // Quita de la lista las reservas que ya no están activas (canceladas desde otro sitio).
+    if (PRUEBA || !mias.length) return;
+    const vivas = [];
+    for (const m of mias) {
+      const r = await pedir({ accion: "consultar", clave: m.clave }, { reintentos: 0 });
+      if (r.red) { vivas.push(m); continue; }
+      if (r.ok && (r.estado === "Confirmada" || r.estado === "Lista de espera")) vivas.push({ ...m, estado: r.estado === "Confirmada" ? "confirmada" : "espera" });
+    }
+    mias = vivas; guardado.poner("misReservas", mias);
+    if (datos) { pintarMias(); pintarCalendario(); }
+  }
+
+  // ── Perfil (datos recordados) ───────────────────────────────
+  function pintarPerfil() {
+    const hay = !!(perfil && perfil.nombre && perfil.correo && perfil.telefono);
+    $("perfil").hidden = !hay; $("campos").hidden = hay;
+    if (hay) {
+      $("perfil-nombre").textContent = perfil.nombre;
+      $("perfil-datos").textContent = perfil.correo + " · " + perfil.telefono;
+      $("nombre").value = perfil.nombre; $("correo").value = perfil.correo; $("telefono").value = perfil.telefono;
+    }
+    $("recordar").checked = hay || guardado.leer("recordar", true) !== false;
+  }
+  $("perfil-cambiar").addEventListener("click", () => {
+    $("perfil").hidden = true; $("campos").hidden = false; $("nombre").focus();
+  });
+  $("perfil-noyo").addEventListener("click", () => {
+    perfil = null; guardado.quitar("perfil");
+    mias = []; guardado.poner("misReservas", []);
+    ["nombre", "correo", "telefono"].forEach((k) => { $(k).value = ""; ponerAviso(k, ""); });
+    $("perfil").hidden = true; $("campos").hidden = false;
+    if (datos) { pintarMias(); pintarCalendario(); }
+    $("nombre").focus();
+  });
+  $("recordar").addEventListener("change", (e) => {
+    guardado.poner("recordar", e.target.checked);
+    if (!e.target.checked) { guardado.quitar("perfil"); }
+  });
+
+  // ── Formulario de reserva ───────────────────────────────────
+  function ponerAviso(campo, texto) {
+    const a = $("aviso-" + campo); if (a) a.textContent = texto || "";
+    const i = $(campo); if (i && i.tagName === "INPUT") i.setAttribute("aria-invalid", texto ? "true" : "false");
+  }
+  ["nombre", "correo", "telefono"].forEach((k) => {
+    const i = $(k);
+    i.addEventListener("input", () => { if (i.getAttribute("aria-invalid") === "true") ponerAviso(k, validar[k](i.value)); idPeticion = idUnico(); if (k === "correo") $("sugerencia").hidden = true; });
+    i.addEventListener("blur", () => {
+      if (i.value.trim()) ponerAviso(k, validar[k](i.value));
+      if (k === "correo") {
+        const s = sugerirCorreo(i.value);
+        $("sugerencia").hidden = !s;
+        if (s) { $("sugerencia").innerHTML = `¿Querías decir <button type="button">${esc(s)}</button>?`; $("sugerencia").querySelector("button").onclick = () => { i.value = s; $("sugerencia").hidden = true; ponerAviso("correo", ""); }; }
+      }
+    });
+  });
+
+  $("form").addEventListener("submit", async () => {
+    if (enviando) return;
+    const c = claseElegida();
+    if (!c) return;
+    const valores = { nombre: limpiar($("nombre").value), correo: limpiar($("correo").value).replace(/\s/g, "").toLowerCase(), telefono: limpiar($("telefono").value) };
+    let primeroMal = null;
+    for (const k of Object.keys(valores)) { const e = validar[k](valores[k]); ponerAviso(k, e); if (e && !primeroMal) primeroMal = k; }
+    if (primeroMal) { $("perfil").hidden = true; $("campos").hidden = false; $(primeroMal).focus(); return; }
+    ponerAviso("general", "");
+    const estabaAbierta = c.estado === "abierta";
+    enviando = true; pintarPanel();
+    const lento = setTimeout(() => { $("pie").textContent = "La conexión va lenta. No cierres la página: seguimos intentándolo."; }, 6000);
+    const r = await pedir({ accion: "reservar", fecha: c.fecha, ...valores, web: $("web").value, idPeticion }, { reintentos: 2, espera: 15000 });
+    clearTimeout(lento);
+    enviando = false;
+    if (!r.ok) {
+      if (r.campos) {
+        $("perfil").hidden = true; $("campos").hidden = false;
+        Object.entries(r.campos).forEach(([k, v]) => ponerAviso(k, v));
+      }
+      ponerAviso("general", !r.red ? r.error
+        : r.sinSalir ? "No tienes conexión. Tu reserva no se ha enviado: conéctate y vuelve a pulsar el botón."
+        : r.error + " No sabemos si ha llegado: vuelve a pulsar el botón, no se apuntará dos veces.");
+      pintarPanel();
+      if (!r.red) cargar();
+      return;
+    }
+    // Éxito
+    if ($("recordar").checked) { perfil = { nombre: r.nombre, correo: r.correo, telefono: r.telefono }; guardado.poner("perfil", perfil); }
+    if (!$("recordar").checked) { mias = []; } // en un dispositivo que no recuerda datos tampoco se guardan reservas
+    else mias = mias.filter((m) => !(m.fecha === r.fecha && m.correo === r.correo)).concat([{ fecha: r.fecha, clave: r.clave, estado: r.estado, correo: r.correo }]);
+    guardado.poner("misReservas", mias);
+    idPeticion = idUnico();
+    mostrarResultado(r, estabaAbierta);
+    elegida = null;
+    cargar();
+  });
+
+  function mostrarResultado(r, estabaAbierta) {
+    const sorpresa = estabaAbierta && r.estado === "espera";
+    const ok = r.estado === "confirmada";
+    const enlace = "?reserva=" + encodeURIComponent(r.clave);
+    $("panel-form").hidden = true;
+    const p = $("panel-resultado"); p.hidden = false;
+    p.innerHTML = `
+      <div class="icono ${ok ? "ok" : "espera"}">${ok
+        ? '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
+        : '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>'}</div>
+      <h3 tabindex="-1">${ok ? "¡Plaza confirmada!" : sorpresa ? "La clase se ha llenado mientras reservabas" : "Estás en la lista de espera"}</h3>
+      ${sorpresa ? `<p>Te hemos puesto en la lista de espera (puesto ${r.posicion}). Si alguien cancela, entrarás tú. Si no te interesa, sal desde «Ver o cancelar esta reserva».</p>` : ""}
+      <p><b>${esc(capital(fechaLarga(r.fecha)))}</b>, de ${r.inicio} a ${r.fin}${ok ? "" : ` · puesto ${r.posicion}`}</p>
+      <p style="color:var(--muted);font-size:15px">${r.correoEnviado === false
+        ? "No hemos podido enviarte el correo de confirmación. Guarda el enlace de abajo para poder cancelar."
+        : `Te hemos enviado un correo a <b>${esc(r.correo)}</b> con un enlace para cancelar. Mira en spam si no lo ves.`}</p>
+      <div class="acciones">
+        <a class="btn secondary" style="text-decoration:none;display:block" href="${enlace}">Ver o cancelar esta reserva</a>
+        <button class="btn primary" type="button" id="otra">Volver al calendario</button>
+      </div>`;
+    $("otra").onclick = () => {
+      p.hidden = true; $("panel-form").hidden = false; pintarPerfil(); pintarPanel();
+      if (window.matchMedia("(max-width: 900px)").matches) $("calendario").scrollIntoView({ behavior: "smooth", block: "start" });
+      $("panel-titulo").focus({ preventScroll: true });
+    };
+    if (window.matchMedia("(max-width: 900px)").matches) p.scrollIntoView({ behavior: "smooth", block: "center" });
+    p.querySelector("h3").focus({ preventScroll: true });
+  }
+
+  // ── ¿Perdiste el enlace? ────────────────────────────────────
+  $("abrir-perdido").addEventListener("click", () => { const f = $("form-perdido"); f.hidden = !f.hidden; $("abrir-perdido").setAttribute("aria-expanded", String(!f.hidden)); if (!f.hidden) { $("correo-perdido").value = $("correo").value; $("correo-perdido").focus(); } });
+  $("form-perdido").addEventListener("submit", async () => {
+    const v = $("correo-perdido").value, e = validar.correo(v);
+    $("aviso-perdido").textContent = e; $("ok-perdido").textContent = "";
+    if (e) return;
+    const b = $("enviar-perdido"); b.disabled = true;
+    const r = await pedir({ accion: "reenviar", correo: limpiar(v).replace(/\s/g, "") });
+    b.disabled = false;
+    if (r.ok) $("ok-perdido").textContent = r.mensaje; else $("aviso-perdido").textContent = r.error;
+  });
+
+  // ── Página de una reserva (?reserva=…) ──────────────────────
+  async function vistaReserva(clave) {
+    $("vista-principal").hidden = true; $("vista-reserva").hidden = false;
+    document.title = "Tu reserva · Clases de vuelo de UCA&Air";
+    const cont = $("reserva-contenido");
+    if (!/^[a-f0-9]{40}$/i.test(clave)) { cont.innerHTML = `<div class="resultado"><div class="icono no">!</div><h3>Enlace incompleto</h3><p>Copia el enlace entero desde el correo, o pide que te lo enviemos otra vez desde la página principal.</p></div>`; return; }
+    const r = await pedir({ accion: "consultar", clave });
+    if (!r.ok) { cont.innerHTML = `<div class="resultado"><div class="icono no">!</div><h3>No se puede mostrar la reserva</h3><p>${esc(r.error)}</p>${r.red ? '<button class="btn secondary" onclick="location.reload()">Reintentar</button>' : ""}</div>`; return; }
+    // No se guarda nada de esta reserva en el dispositivo: el enlace puede abrirse en un móvil ajeno.
+    const activa = r.estado === "Confirmada" || r.estado === "Lista de espera";
+    if (!activa && mias.some((m) => m.clave === clave)) { mias = mias.filter((m) => m.clave !== clave); guardado.poner("misReservas", mias); }
+    const etiqueta = { "Confirmada": ["ok", "Plaza confirmada"], "Lista de espera": ["espera", `En lista de espera (puesto ${r.posicion})`], "Cancelada": ["no", "Reserva cancelada"], "Clase cancelada": ["no", "La clase se ha cancelado"] }[r.estado] || ["no", r.estado];
+    cont.innerHTML = `<div class="resultado">
+      <div class="icono ${etiqueta[0]}">${etiqueta[0] === "ok" ? "✓" : etiqueta[0] === "espera" ? "…" : "✕"}</div>
+      <h3 tabindex="-1">${esc(etiqueta[1])}</h3>
+      <p><b>${esc(capital(fechaLarga(r.fecha)))}</b>, de ${r.inicio} a ${r.fin}</p>
+      <p style="color:var(--muted);font-size:15px">${esc(r.nombre)} · ${esc(r.correo)}</p>
+      <div class="acciones" id="acciones-reserva">${r.sePuedeCancelar
+        ? `<button class="btn secondary" type="button" id="cancelar">${r.estado === "Confirmada" ? "Cancelar mi plaza" : "Salir de la lista de espera"}</button>`
+        : activa && r.pasada ? '<p class="pie">La clase ya ha empezado o ha pasado.</p>' : ""}</div>
+      <small class="aviso" id="aviso-cancelar" role="alert"></small></div>`;
+    if (vistaReserva.enfocar) { vistaReserva.enfocar = false; const h = cont.querySelector("h3"); if (h) h.focus(); }
+    const b = $("cancelar");
+    if (b) b.onclick = () => {
+      $("acciones-reserva").innerHTML = `<p style="margin:0">¿Seguro? La plaza pasará a otra persona.</p>
+        <button class="btn peligro" type="button" id="si-cancelar">Sí, cancelar</button>
+        <button class="btn secondary" type="button" id="no-cancelar">No, mantener</button>`;
+      $("no-cancelar").onclick = () => vistaReserva(clave);
+      $("si-cancelar").onclick = async (ev) => {
+        ev.target.disabled = true; ev.target.textContent = "Cancelando…"; $("no-cancelar").disabled = true;
+        const c = await pedir({ accion: "cancelar", clave }, { reintentos: 2 });
+        if (!c.ok) { $("aviso-cancelar").textContent = c.error; ev.target.disabled = false; ev.target.textContent = "Sí, cancelar"; $("no-cancelar").disabled = false; return; }
+        mias = mias.filter((m) => m.clave !== clave); guardado.poner("misReservas", mias);
+        vistaReserva.enfocar = true;
+        vistaReserva(clave);
+      };
+    };
+  }
+
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+  // ── Modo de prueba (sin servidor) ───────────────────────────
+  const demoBD = { reservas: [] };
+  function demo(d) {
+    return new Promise((ok) => setTimeout(() => ok(demoResp(d)), 350));
+  }
+  function demoResp(d) {
+    const hoy = new Date(); const clases = [];
+    for (let i = 0; clases.length < 6; i++) {
+      const f = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + i);
+      if (f.getDay() !== 6) continue;
+      const iso = f.toLocaleDateString("sv-SE");
+      const n = clases.length;
+      const base = [1, 3, 0, 2, 0, 0][n];
+      const ocup = base + demoBD.reservas.filter((r) => r.fecha === iso && r.estado === "confirmada").length;
+      const plazas = n === 3 ? 6 : 3;
+      const est = n === 4 ? "cancelada" : ocup >= plazas ? "espera" : "abierta";
+      const cierre = new Date(f.getFullYear(), f.getMonth(), f.getDate(), -2).toISOString();
+      clases.push({ fecha: iso, inicio: "10:00", fin: "13:00", plazas, ocupadas: Math.min(ocup, plazas), enEspera: n === 1 ? 1 : 0, estado: est,
+        pilotos: n === 3 ? ["Fabio Fernández Ruiz", "Otro instructor"] : ["Fabio Fernández Ruiz"], nota: n === 4 ? "Previsión de viento fuerte" : n === 3 ? "Dos instructores: más plazas" : "", cierre });
+    }
+    if (d.accion === "clases") return { ok: true, clases, lugar: "", aviso: "", cierreHoras: 12, maximo: 2, listaEspera: true };
+    if (d.accion === "reservar") {
+      const c = clases.find((x) => x.fecha === d.fecha);
+      if (demoBD.reservas.some((r) => r.fecha === d.fecha && r.correo === d.correo)) return { ok: false, error: "Ya tienes plaza en esa clase." };
+      const estado = c.estado === "espera" ? "espera" : "confirmada";
+      const clave = Array.from({ length: 40 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
+      const nombre = limpiar(d.nombre).split(" ").map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+      demoBD.reservas.push({ fecha: d.fecha, correo: d.correo, estado, clave, nombre, telefono: d.telefono });
+      return { ok: true, estado, posicion: estado === "espera" ? 2 : 0, fecha: d.fecha, inicio: c.inicio, fin: c.fin, clave, nombre, correo: d.correo, telefono: d.telefono, correoEnviado: true };
+    }
+    if (d.accion === "consultar" || d.accion === "cancelar") {
+      const r = demoBD.reservas.find((x) => x.clave === d.clave);
+      if (!r) return { ok: false, error: "En el modo de prueba las reservas se pierden al recargar la página." };
+      if (d.accion === "cancelar") { r.estado = "cancelada"; return { ok: true, cancelada: true }; }
+      return { ok: true, fecha: r.fecha, inicio: "10:00", fin: "13:00", nombre: r.nombre, correo: r.correo, estado: { confirmada: "Confirmada", espera: "Lista de espera", cancelada: "Cancelada" }[r.estado], posicion: 2, sePuedeCancelar: r.estado !== "cancelada" };
+    }
+    if (d.accion === "reenviar") return { ok: true, mensaje: "Si ese correo tiene reservas pendientes, te acabamos de enviar los enlaces. Mira también en spam." };
+    return { ok: false, error: "Acción desconocida." };
+  }
+
+  // ── Administración (?admin) ──────────────────────────────────
+  // El token va en sessionStorage (se borra al cerrar el navegador) salvo que se pida mantener la sesión.
+  const tokenAdmin = {
+    leer() { try { return sessionStorage.getItem("adminToken") || JSON.parse(localStorage.getItem("adminToken") || "null"); } catch (_) { return null; } },
+    poner(t, recordar) { try { if (recordar) localStorage.setItem("adminToken", JSON.stringify(t)); else sessionStorage.setItem("adminToken", t); } catch (_) {} },
+    quitar() { try { sessionStorage.removeItem("adminToken"); localStorage.removeItem("adminToken"); } catch (_) {} },
+  };
+  const ADM = { token: tokenAdmin.leer(), datos: null, abiertas: null, mensaje: null };
+  const hoyMadrid = () => new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
+
+  async function admPedir(d, op) {
+    const r = await pedir({ ...d, token: ADM.token }, op);
+    if (!r.ok && r.codigo === "sesion") { ADM.token = null; tokenAdmin.quitar(); mostrarLogin(r.error); }
+    return r;
+  }
+  function mostrarLogin(msg) {
+    $("adm-panel").hidden = true; $("adm-entrar").hidden = true; $("adm-login").hidden = false;
+    $("aviso-login").textContent = msg || "";
+  }
+  async function vistaAdmin(params) {
+    $("vista-principal").hidden = true; $("vista-reserva").hidden = true; $("vista-admin").hidden = false;
+    $("enlace-admin").hidden = true; $("datos").hidden = true;
+    $("titulo").textContent = "Organización de clases"; $("subtitulo").textContent = "Quién va a cada clase, altas y bajas, y cambios de un día concreto.";
+    document.title = "Organización · Clases de vuelo de UCA&Air";
+    if (PRUEBA) { mostrarLogin("La administración necesita que la página esté conectada a la hoja (config.js)."); $("enviar-login").disabled = true; return; }
+    const t = params.get("entrar");
+    if (t) {
+      // El enlace solo se usa al pulsar «Entrar» (los antivirus que abren enlaces del correo no lo gastan).
+      try { history.replaceState(null, "", location.pathname + "?admin"); } catch (_) {}
+      $("adm-login").hidden = true; $("adm-panel").hidden = true; $("adm-entrar").hidden = false;
+      $("adm-entrar-btn").onclick = async () => {
+        const b = $("adm-entrar-btn"); b.disabled = true; b.textContent = "Entrando…";
+        const recordar = $("adm-recordar").checked;
+        const r = await pedir({ accion: "adminCanjear", t: t.trim(), recordar });
+        b.disabled = false; b.textContent = "Entrar";
+        if (!r.ok) { if (r.red) { $("aviso-entrar").textContent = r.error; return; } mostrarLogin(r.error); return; }
+        ADM.token = r.token; tokenAdmin.poner(r.token, recordar);
+        $("adm-entrar").hidden = true; $("adm-panel").hidden = false;
+        admCargar();
+      };
+      return;
+    }
+    if (!ADM.token) { mostrarLogin(""); return; }
+    $("adm-login").hidden = true; $("adm-panel").hidden = false;
+    admCargar();
+  }
+  $("form-login").addEventListener("submit", async () => {
+    const v = $("correo-login").value, e = validar.correo(v);
+    $("aviso-login").textContent = e; $("ok-login").textContent = "";
+    $("correo-login").setAttribute("aria-invalid", e ? "true" : "false");
+    if (e) return;
+    const b = $("enviar-login"); b.disabled = true; b.setAttribute("aria-busy", "true"); b.textContent = "Enviando…";
+    const r = await pedir({ accion: "adminEntrar", correo: limpiar(v).replace(/\s/g, "").toLowerCase() });
+    b.disabled = false; b.removeAttribute("aria-busy"); b.textContent = "Enviarme el enlace";
+    if (r.ok) $("ok-login").textContent = r.mensaje; else $("aviso-login").textContent = r.error;
+  });
+  async function admSalir(todas) {
+    if (todas && !confirm("Se cerrará tu sesión en todos los navegadores donde hayas entrado. ¿Seguir?")) return;
+    const tk = ADM.token; ADM.token = null; tokenAdmin.quitar();
+    if (tk) await pedir({ accion: "adminSalir", token: tk, todas }, { reintentos: todas ? 2 : 0 });
+    mostrarLogin(todas ? "Has salido en todos los dispositivos." : "Has salido. Para volver a entrar, pide otro enlace.");
+  }
+  $("adm-salir").addEventListener("click", () => admSalir(false));
+  $("adm-salir-todo").addEventListener("click", () => admSalir(true));
+  $("adm-recargar").addEventListener("click", () => admCargar());
+
+  async function admCargar() {
+    const b = $("adm-recargar"); b.disabled = true;
+    const r = await admPedir({ accion: "adminDatos" });
+    b.disabled = false;
+    if (!r.ok) {
+      if (r.codigo !== "sesion") $("adm-lista").innerHTML = `<div class="banda error">${esc(r.error)}</div>`;
+      return;
+    }
+    ADM.datos = r;
+    pintarAdmin();
+  }
+
+  const ESTADO_CHIP = { abierta: ["ok", "Abierta"], espera: ["warn", "Completa"], completa: ["warn", "Completa"], cerrada: ["", "Reservas cerradas"], cancelada: ["err", "Cancelada"] };
+
+  function pintarAdmin() {
+    const d = ADM.datos;
+    $("adm-quien").textContent = "Has entrado como " + d.correo;
+    if (d.hoja) $("adm-hoja").href = d.hoja; else $("adm-hoja").hidden = true;
+    $("adm-avisos").hidden = !(d.avisos && d.avisos.length);
+    if (d.avisos && d.avisos.length) $("adm-avisos").textContent = "Revisa la pestaña Ajustes o Excepciones: " + d.avisos.join(" ");
+    const futuras = d.clases.filter((c) => !c.pasada), pasadas = d.clases.filter((c) => c.pasada).reverse();
+    if (!ADM.abiertas) ADM.abiertas = new Set(futuras.slice(0, 2).map((c) => c.fecha));
+    let html = futuras.length ? futuras.map(tarjetaAdmin).join("") : '<div class="vacio">No hay clases en las próximas semanas.</div>';
+    if (pasadas.length) html += `<h2 style="margin-top:24px">Últimas dos semanas</h2>` + pasadas.map(tarjetaAdmin).join("");
+    $("adm-lista").innerHTML = html;
+    $("adm-lista").querySelectorAll("details.adm").forEach((el) => el.addEventListener("toggle", () => { el.open ? ADM.abiertas.add(el.dataset.fecha) : ADM.abiertas.delete(el.dataset.fecha); }));
+    if (ADM.mensaje) { const b = document.querySelector(`details.adm[data-fecha="${ADM.mensaje.fecha}"] .banda`); if (b) { b.setAttribute("tabindex", "-1"); b.focus(); } }
+    ADM.mensaje = null;
+  }
+
+  function personaAdmin(r, activa, editable) {
+    const tel = r.telefono.replace(/\s/g, "");
+    return `<li class="${activa ? "" : "inactiva"}">
+      <span class="nom">${esc(r.nombre)}${activa ? "" : ` <span class="chip">${esc(r.estado)}</span>`}</span>
+      <span class="acc">${activa && editable ? `<button type="button" class="btn secondary peq" data-quitar="${esc(r.numero)}" data-nombre="${esc(r.nombre)}">Quitar</button>` : ""}</span>
+      <span class="con"><a href="tel:${esc(tel)}">${esc(r.telefono)}</a> · <a href="mailto:${esc(r.correo)}">${esc(r.correo)}</a></span>
+    </li>`;
+  }
+
+  function tarjetaAdmin(c) {
+    const conf = c.reservas.filter((r) => r.estado === "Confirmada");
+    const esp = c.reservas.filter((r) => r.estado === "Lista de espera");
+    const bajas = c.reservas.filter((r) => r.estado !== "Confirmada" && r.estado !== "Lista de espera");
+    const editable = !c.pasada;
+    let chip = c.sinClase ? ["err", "Sin clase"] : c.pasada ? ["", "Pasada"] : (ESTADO_CHIP[c.estado] || ["", c.estado]);
+    const cambiado = c.excepcion && c.excepcion.tipo !== "cancelada" ? '<span class="chip">Cambiada</span>' : "";
+    const e = c.excepcion || {};
+    const tipoActual = c.estado === "cancelada" ? "cancelada" : c.excepcion ? "cambio" : "normal";
+    const msg = ADM.mensaje && ADM.mensaje.fecha === c.fecha ? ADM.mensaje : null;
+    const id = "d" + c.fecha.replace(/-/g, "");
+    return `<details class="adm" data-fecha="${c.fecha}" ${ADM.abiertas.has(c.fecha) || msg ? "open" : ""}>
+      <summary>
+        <span><span class="t">${esc(capital(fechaLarga(c.fecha)))}</span><span class="chip ${chip[0]}">${chip[1]}</span>${cambiado}</span>
+        <span class="n">${c.estado === "cancelada" || c.sinClase ? "—" : `${conf.length}/${c.plazas}`}<small>${c.estado === "cancelada" || c.sinClase ? "" : "plazas"}</small></span>
+        <span class="s">${c.inicio}–${c.fin}${c.pilotos && c.pilotos.length ? " · " + esc(c.pilotos.join(", ")) : ""}${esp.length ? ` · ${esp.length} en espera` : ""}</span>
+      </summary>
+      <div class="adm-cuerpo">
+        ${msg ? `<p class="banda ${msg.error ? "error" : "info"}" style="margin:0" role="status">${esc(msg.texto)}</p>` : ""}
+        ${c.nota ? `<p class="ayuda">Nota: ${esc(c.nota)}</p>` : ""}
+        <div><p class="subt">Apuntados</p>${conf.length ? `<ul class="gente">${conf.map((r) => personaAdmin(r, true, editable)).join("")}</ul>` : '<p class="ayuda">Nadie todavía.</p>'}</div>
+        ${esp.length ? `<div><p class="subt">Lista de espera</p><ul class="gente">${esp.map((r) => personaAdmin(r, true, editable)).join("")}</ul></div>` : ""}
+        ${bajas.length ? `<details><summary class="ayuda" style="cursor:pointer;padding:10px 0">Bajas y anuladas (${bajas.length})</summary><ul class="gente">${bajas.map((r) => personaAdmin(r, false, false)).join("")}</ul></details>` : ""}
+        ${editable ? `<div class="adm-botones">
+          ${!c.sinClase && c.estado !== "cancelada" ? `<button type="button" class="btn secondary peq" data-abrir="apuntar-${id}" aria-expanded="false" aria-controls="apuntar-${id}">Apuntar a alguien</button>` : ""}
+          <button type="button" class="btn secondary peq" data-abrir="editar-${id}" aria-expanded="false" aria-controls="editar-${id}">Editar este día</button>
+        </div>
+        <form class="caja" id="apuntar-${id}" data-apuntar="${c.fecha}" hidden novalidate action="javascript:void 0">
+          <p class="subt">Apuntar a alguien</p>
+          <div class="campo"><label for="an-${id}">Nombre y apellidos</label><input id="an-${id}" name="nombre" type="text" autocomplete="off" maxlength="80"><small class="aviso" data-aviso="nombre"></small></div>
+          <div class="dos">
+            <div class="campo"><label for="ac-${id}">Correo</label><input id="ac-${id}" name="correo" type="email" inputmode="email" autocomplete="off" spellcheck="false" autocapitalize="off" maxlength="120"><small class="aviso" data-aviso="correo"></small></div>
+            <div class="campo"><label for="at-${id}">Teléfono</label><input id="at-${id}" name="telefono" type="tel" inputmode="tel" autocomplete="off" maxlength="25"><small class="aviso" data-aviso="telefono"></small></div>
+          </div>
+          <label class="check"><input type="checkbox" name="avisar" checked> Enviarle el correo de confirmación con su enlace para cancelar</label>
+          <p class="ayuda">No cuenta el máximo por persona ni el cierre de reservas.</p>
+          <small class="aviso" data-aviso="general" role="alert"></small>
+          <button class="btn primary" type="submit">Apuntar</button>
+        </form>
+        <form class="caja" id="editar-${id}" data-editar="${c.fecha}" hidden novalidate action="javascript:void 0">
+          <fieldset class="opciones"><legend>¿Qué pasa este día?</legend>
+            <label><input type="radio" name="tipo" value="normal" ${tipoActual === "normal" ? "checked" : ""}> ${c.habitual ? "Clase normal" : "Sin clase"}</label>
+            <label><input type="radio" name="tipo" value="cambio" ${tipoActual === "cambio" ? "checked" : ""}> ${c.habitual ? "Cambiar horario o plazas" : "Clase extra"}</label>
+            <label><input type="radio" name="tipo" value="cancelada" ${tipoActual === "cancelada" ? "checked" : ""}> Cancelar la clase</label>
+          </fieldset>
+          ${tipoActual === "cancelada" ? '<p class="ayuda">Si la vuelves a poner en marcha, las reservas que había vuelven a como estaban y se avisa a cada persona.</p>' : ""}
+          <div class="solo-cambio" ${tipoActual === "cambio" ? "" : "hidden"} style="display:grid;gap:12px">
+            <div class="dos">
+              <div class="campo"><label for="ei-${id}">Hora de inicio</label><input id="ei-${id}" name="inicio" type="text" inputmode="text" autocomplete="off" placeholder="${esc(ADM.datos.base.inicio)}" value="${esc(e.inicio || "")}" maxlength="5"><small class="aviso" data-aviso="inicio"></small></div>
+              <div class="campo"><label for="ef-${id}">Hora de fin</label><input id="ef-${id}" name="fin" type="text" inputmode="text" autocomplete="off" placeholder="${esc(ADM.datos.base.fin)}" value="${esc(e.fin || "")}" maxlength="5"><small class="aviso" data-aviso="fin"></small></div>
+            </div>
+            <div class="campo"><label for="ep-${id}">Instructores ese día, separados por comas</label><input id="ep-${id}" name="pilotos" type="text" placeholder="${esc(ADM.datos.base.pilotos)}" value="${esc(e.pilotos || "")}" maxlength="300"><small class="aviso" data-aviso="pilotos"></small></div>
+            <div class="dos">
+              <div class="campo"><label for="ex-${id}">Plazas extra (+ o −)</label><input id="ex-${id}" name="extra" type="text" inputmode="text" autocomplete="off" placeholder="0" value="${esc(e.extra ? String(e.extra) : "")}" maxlength="4"><small class="aviso" data-aviso="extra"></small></div>
+              <div class="campo"><label for="et-${id}">Plazas totales (opcional)</label><input id="et-${id}" name="plazas" type="text" inputmode="numeric" placeholder="automático" value="${esc(e.plazas === "" || e.plazas == null ? "" : String(e.plazas))}" maxlength="3"><small class="aviso" data-aviso="plazas"></small></div>
+            </div>
+            <p class="ayuda">Plazas = instructores × ${ADM.datos.base.plazasPorInstructor} + extra (por aviones, baterías…). Si pones plazas totales, mandan sobre lo demás. Deja en blanco lo que no cambie.</p>
+          </div>
+          <div class="campo"><label for="en-${id}">Nota para la web y los correos (opcional)</label><input id="en-${id}" name="nota" type="text" maxlength="200" value="${esc(e.nota || "")}"></div>
+          <small class="aviso" data-aviso="general" role="alert"></small>
+          <button class="btn primary" type="submit">Guardar este día</button>
+        </form>` : ""}
+      </div>
+    </details>`;
+  }
+
+  // Eventos de la administración (delegados)
+  $("adm-lista").addEventListener("click", async (ev) => {
+    const abrir = ev.target.closest("[data-abrir]");
+    if (abrir) {
+      const f = $(abrir.dataset.abrir); f.hidden = !f.hidden; abrir.setAttribute("aria-expanded", String(!f.hidden));
+      if (!f.hidden) { const i = f.querySelector("input:not([type=radio]):not([type=checkbox])"); if (i && f.dataset.apuntar) i.focus(); }
+      return;
+    }
+    const quitar = ev.target.closest("[data-quitar]");
+    if (quitar) {
+      const fecha = quitar.closest("details.adm").dataset.fecha;
+      if (!confirm(`¿Quitar a ${quitar.dataset.nombre} de la clase del ${fechaLarga(fecha)}? Le llegará un correo avisando.`)) return;
+      quitar.disabled = true; quitar.textContent = "Quitando…";
+      const r = await admPedir({ accion: "adminCancelar", numero: quitar.dataset.quitar }, { reintentos: 2 });
+      if (!r.ok) { if (r.codigo !== "sesion") { alert(r.error); quitar.disabled = false; quitar.textContent = "Quitar"; } return; }
+      ADM.mensaje = { fecha, texto: `${quitar.dataset.nombre} ya no está en la clase.` + (r.ascendidos && r.ascendidos.length ? ` Ha entrado desde la lista de espera: ${r.ascendidos.join(", ")}.` : "") };
+      admCargar();
+    }
+  });
+  $("adm-lista").addEventListener("change", (ev) => {
+    if (ev.target.name === "tipo") { const f = ev.target.form; f.querySelector(".solo-cambio").hidden = ev.target.value !== "cambio"; }
+  });
+  $("adm-lista").addEventListener("submit", async (ev) => {
+    const f = ev.target; ev.preventDefault();
+    const aviso = (k, t) => { const a = f.querySelector(`[data-aviso="${k}"]`); if (a) a.textContent = t || ""; const i = f.elements[k]; if (i && i.setAttribute) i.setAttribute("aria-invalid", t ? "true" : "false"); };
+    f.querySelectorAll("[data-aviso]").forEach((a) => (a.textContent = ""));
+    const boton = f.querySelector("button[type=submit]"), textoBoton = boton.textContent;
+    const ocupado = (si) => { boton.disabled = si; boton.textContent = si ? "Guardando…" : textoBoton; };
+    if (f.dataset.apuntar) {
+      const fecha = f.dataset.apuntar;
+      const v = { nombre: limpiar(f.elements.nombre.value), correo: limpiar(f.elements.correo.value).replace(/\s/g, "").toLowerCase(), telefono: limpiar(f.elements.telefono.value) };
+      let mal = false; for (const k of Object.keys(v)) { const e = validar[k](v[k]); aviso(k, e); if (e && !mal) { mal = true; f.elements[k].focus(); } }
+      if (mal) return;
+      ocupado(true);
+      let r = await admPedir({ accion: "adminApuntar", fecha, ...v, avisar: f.elements.avisar.checked }, { reintentos: 1 });
+      if (!r.ok && r.codigo === "llena" && confirm(r.error)) r = await admPedir({ accion: "adminApuntar", fecha, ...v, avisar: f.elements.avisar.checked, forzar: true }, { reintentos: 1 });
+      ocupado(false);
+      if (!r.ok) { if (r.campos) Object.entries(r.campos).forEach(([k, t]) => aviso(k, t)); if (r.codigo === "llena") aviso("general", "No se ha apuntado: la clase está llena."); else if (r.codigo !== "sesion") aviso("general", r.error); const mal = f.querySelector("[aria-invalid=true]"); if (mal) mal.focus(); return; }
+      ADM.mensaje = { fecha, texto: `${r.nombre} está apuntado.` + (f.elements.avisar.checked ? (r.correoEnviado ? " Le hemos enviado el correo." : " No se pudo enviar el correo.") : "") };
+      admCargar();
+    } else if (f.dataset.editar) {
+      const fecha = f.dataset.editar, tipo = (f.querySelector("input[name=tipo]:checked") || {}).value;
+      if (!tipo) { aviso("general", "Elige qué pasa este día."); return; }
+      const c = ADM.datos.clases.find((x) => x.fecha === fecha);
+      const activas = c ? c.reservas.filter((r) => r.estado === "Confirmada" || r.estado === "Lista de espera").length : 0;
+      if (tipo === "cancelada" && c && c.estado !== "cancelada" && !confirm(activas ? `Se cancelará la clase del ${fechaLarga(fecha)} y se avisará por correo a ${activas} persona${activas === 1 ? "" : "s"}. ¿Seguir?` : `¿Cancelar la clase del ${fechaLarga(fecha)}?`)) return;
+      const confirmadas = c ? c.reservas.filter((r) => r.estado === "Confirmada").length : 0;
+      const plazasNuevas = tipo === "cambio" ? f.elements.plazas.value.trim() : "";
+      if (plazasNuevas !== "" && Number(plazasNuevas) < confirmadas && !confirm(`Hay ${confirmadas} apuntados y dejas ${plazasNuevas} plazas. Nadie se da de baja solo: quita tú a quien sobre. ¿Guardar?`)) return;
+      const datosDia = { accion: "adminDia", fecha, tipo, nota: f.elements.nota.value };
+      if (tipo === "cambio") ["inicio", "fin", "pilotos", "extra", "plazas"].forEach((k) => (datosDia[k] = f.elements[k].value.trim().replace("−", "-")));
+      ocupado(true);
+      const r = await admPedir(datosDia, { reintentos: 1 });
+      ocupado(false);
+      if (!r.ok) { if (r.campos) Object.entries(r.campos).forEach(([k, t]) => aviso(k, t)); if (r.codigo !== "sesion") aviso("general", r.campos ? "Revisa los datos marcados." : r.error); const mal = f.querySelector("[aria-invalid=true]"); if (mal) mal.focus(); return; }
+      ADM.mensaje = { fecha, texto: "Día guardado." + (r.restauradas ? ` ${r.restauradas} reserva${r.restauradas === 1 ? " vuelve" : "s vuelven"} a estar como antes de cancelar y se les ha avisado.` : "") + (r.avisadosHorario ? ` Se ha avisado del nuevo horario a ${r.avisadosHorario} persona${r.avisadosHorario === 1 ? "" : "s"}.` : "") + (r.aviso ? " " + r.aviso : "") + (r.avisados ? ` Se ha avisado a ${r.avisados} persona${r.avisados === 1 ? "" : "s"}.` : "") + (r.ascendidos && r.ascendidos.length ? ` Han entrado desde la lista de espera: ${r.ascendidos.join(", ")}.` : "") };
+      admCargar();
+    }
+  });
+
+  // ── Arranque ────────────────────────────────────────────────
+  if (PRUEBA) $("modo-prueba").hidden = false;
+  pintarPerfil();
+  const params = new URLSearchParams(location.search);
+  let clave = params.get("reserva");
+  if (clave !== null) {
+    // Quita la clave de la barra de direcciones y del historial; se guarda solo en esta pestaña por si se recarga.
+    try { sessionStorage.setItem("reserva", clave); history.replaceState(null, "", location.pathname + "?ver"); } catch (_) {}
+  } else if (params.has("ver")) {
+    try { clave = sessionStorage.getItem("reserva"); } catch (_) {}
+    if (clave === null) { try { history.replaceState(null, "", location.pathname); } catch (_) {} }
+  }
+  if (params.has("admin") || params.has("entrar")) vistaAdmin(params);
+  else if (clave !== null) vistaReserva(clave.trim());
+  else {
+    cargar().then(comprobarMias);
+    // Al volver a la pestaña, se recarga el calendario por si ha cambiado algo.
+    let ultimaCarga = Date.now();
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && Date.now() - ultimaCarga > 60000 && !enviando) { ultimaCarga = Date.now(); cargar(); }
+    });
+  }
+})();
+</script>
+</body>
+</html>
