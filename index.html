@@ -181,6 +181,34 @@
   .adm-cab .quien { color: var(--muted); font-size: 15px; overflow-wrap: anywhere; }
   .adm-cab .botones { display: flex; gap: 8px; flex-wrap: wrap; }
   .adm-lista { display: grid; gap: 12px; }
+  .vistas { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 10px; padding: 3px; gap: 3px; margin-bottom: 16px; background: var(--surface); }
+  .vistas button { min-height: 38px; padding: 6px 16px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .vistas button[aria-pressed="true"] { background: var(--field); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-strong); }
+  .cal { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 12px; margin-bottom: 16px; }
+  .cal-cab { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .cal-cab h2 { margin: 0; font: 600 21px/1.2 var(--display); }
+  .cal-cab button { min-width: 44px; min-height: 44px; border: 1px solid var(--line-strong); border-radius: 10px; background: transparent; color: var(--ink); font-size: 20px; cursor: pointer; }
+  .cal-cab button:disabled { opacity: .35; cursor: default; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .cal-grid .dow { text-align: center; font-size: 13px; color: var(--muted); padding: 2px 0 4px; text-transform: uppercase; letter-spacing: .04em; }
+  .cal-dia { min-height: 62px; border: 1px solid transparent; border-radius: 8px; padding: 6px 4px; background: transparent; color: var(--muted); font: inherit; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  button.cal-dia { cursor: pointer; }
+  button.cal-dia:hover { border-color: var(--line-strong); }
+  .cal-dia .num { font-size: 15px; font-variant-numeric: tabular-nums; }
+  .cal-dia .ocu { font: 700 14px/1 var(--display); font-variant-numeric: tabular-nums; padding: 3px 6px; border-radius: 999px; }
+  .cal-dia.hay { background: var(--field); color: var(--ink); }
+  .cal-dia.hay .num { font-weight: 600; }
+  .cal-dia.abierta .ocu { background: var(--ok-soft); color: var(--ok); }
+  .cal-dia.completa .ocu { background: var(--warn-soft); color: var(--warn); }
+  .cal-dia.cancelada .ocu, .cal-dia.sinclase .ocu { background: var(--err-soft); color: var(--err); }
+  .cal-dia.cancelada .num { text-decoration: line-through; }
+  .cal-dia.pasada { opacity: .6; }
+  .cal-dia.fuera { opacity: .3; }
+  .cal-dia.hoy .num { box-shadow: 0 2px 0 var(--accent); }
+  .cal-dia[aria-pressed="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+  .cal-ley { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 10px; font-size: 13px; color: var(--muted); }
+  .cal-ley span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; background: var(--c); }
+  @media (max-width: 420px) { .cal { padding: 8px; } .cal-grid { gap: 2px; } .cal-dia { min-height: 54px; padding: 5px 2px; } .cal-dia .ocu { font-size: 12px; padding: 2px 4px; } }
   details.adm { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
   details.adm[open] { box-shadow: var(--shadow); }
   details.adm > summary { list-style: none; cursor: pointer; padding: 14px 18px; display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; align-items: center; }
@@ -396,6 +424,11 @@
       </div>
       <p class="banda error" id="adm-avisos" hidden></p>
       <p class="banda info" id="adm-msg" role="status" hidden></p>
+      <div class="vistas" role="group" aria-label="Cómo ver las clases">
+        <button type="button" id="ver-lista" aria-pressed="true">Lista</button>
+        <button type="button" id="ver-cal" aria-pressed="false">Calendario</button>
+      </div>
+      <div id="adm-cal" hidden></div>
       <div id="adm-lista" class="adm-lista"><div class="esqueleto"></div><div class="esqueleto"></div></div>
     </div>
   </section>
@@ -937,7 +970,7 @@
     poner(t, recordar) { try { if (recordar) localStorage.setItem("adminToken", JSON.stringify(t)); else sessionStorage.setItem("adminToken", t); } catch (_) {} },
     quitar() { try { sessionStorage.removeItem("adminToken"); localStorage.removeItem("adminToken"); } catch (_) {} },
   };
-  const ADM = { token: tokenAdmin.leer(), datos: null, abiertas: null, mensaje: null };
+  const ADM = { token: tokenAdmin.leer(), datos: null, abiertas: null, mensaje: null, vista: guardado.leer("admVista", "lista"), mes: null, dia: null };
   const hoyMadrid = () => new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
 
   async function admPedir(d, op) {
@@ -1018,13 +1051,105 @@
     if (d.avisos && d.avisos.length) $("adm-avisos").textContent = "Revisa la pestaña Ajustes o Excepciones: " + d.avisos.join(" ");
     const futuras = d.clases.filter((c) => !c.pasada), pasadas = d.clases.filter((c) => c.pasada).reverse();
     if (!ADM.abiertas) ADM.abiertas = new Set(futuras.slice(0, 2).map((c) => c.fecha));
-    let html = futuras.length ? futuras.map(tarjetaAdmin).join("") : '<div class="vacio">No hay clases en las próximas semanas.</div>';
-    if (pasadas.length) html += `<h2 style="margin-top:24px">Últimas dos semanas</h2>` + pasadas.map(tarjetaAdmin).join("");
+    $("ver-lista").setAttribute("aria-pressed", String(ADM.vista !== "cal"));
+    $("ver-cal").setAttribute("aria-pressed", String(ADM.vista === "cal"));
+    $("adm-cal").hidden = ADM.vista !== "cal";
+    let html;
+    if (ADM.vista === "cal") {
+      if (ADM.mensaje) ADM.dia = ADM.mensaje.fecha;
+      if (!ADM.dia) ADM.dia = (futuras[0] || pasadas[0] || { fecha: hoyMadrid() }).fecha;
+      if (!ADM.mes) ADM.mes = ADM.dia.slice(0, 7);
+      pintarCalAdmin();
+      const c = claseCal(ADM.dia);
+      if (c) { ADM.abiertas.add(c.fecha); html = tarjetaAdmin(c); }
+      else html = `<div class="vacio">${esc(capital(fechaLarga(ADM.dia)))}: ${ADM.dia < hoyMadrid() ? "no hubo clase." : "fuera del periodo de reservas abierto."}</div>`;
+    } else {
+      html = futuras.length ? futuras.map(tarjetaAdmin).join("") : '<div class="vacio">No hay clases en las próximas semanas.</div>';
+      if (pasadas.length) html += `<h2 style="margin-top:24px">Últimas dos semanas</h2>` + pasadas.map(tarjetaAdmin).join("");
+    }
     $("adm-lista").innerHTML = html;
     $("adm-lista").querySelectorAll("details.adm").forEach((el) => el.addEventListener("toggle", () => { el.open ? ADM.abiertas.add(el.dataset.fecha) : ADM.abiertas.delete(el.dataset.fecha); }));
     if (ADM.mensaje) { const b = document.querySelector(`details.adm[data-fecha="${ADM.mensaje.fecha}"] .banda`); if (b) { b.setAttribute("tabindex", "-1"); b.focus(); } }
     ADM.mensaje = null;
   }
+
+  // ── Calendario de la administración ──
+  function isoDia(y, m, d) { const t = new Date(Date.UTC(y, m - 1, d)); return t.toISOString().slice(0, 10); }
+  function rangoCal() {
+    const cl = ADM.datos.clases, hoy = hoyMadrid(), p = partes(hoy);
+    const desde = isoDia(p.y, p.m, p.d - 14);
+    const hasta = cl.length ? cl[cl.length - 1].fecha : hoy;
+    return { desde, hasta: hasta > hoy ? hasta : hoy, hoy };
+  }
+  /** La clase de ese día; si no hay y es un día futuro dentro del periodo, una «vacía» para poder crear una clase extra. */
+  function claseCal(f) {
+    const c = ADM.datos.clases.find((x) => x.fecha === f);
+    if (c) return c;
+    const { hasta, hoy } = rangoCal();
+    if (f < hoy || f > hasta) return null;
+    const b = ADM.datos.base;
+    return { fecha: f, inicio: b.inicio, fin: b.fin, pilotos: [], plazas: 0, reservas: [], sinClase: true, habitual: false, excepcion: null, pasada: false, empezada: false, estado: "", nota: "", lugar: "", coche: null };
+  }
+  function pintarCalAdmin() {
+    const { desde, hasta, hoy } = rangoCal();
+    const [y, m] = ADM.mes.split("-").map(Number);
+    const porFecha = new Map(ADM.datos.clases.map((c) => [c.fecha, c]));
+    const n = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    const hueco = (partes(isoDia(y, m, 1)).dow + 6) % 7; // semana empieza en lunes
+    let celdas = ["L", "M", "X", "J", "V", "S", "D"].map((d, i) => `<div class="dow" aria-hidden="true" title="${DIAS[(i + 1) % 7]}">${d}</div>`).join("");
+    celdas += '<div aria-hidden="true"></div>'.repeat(hueco);
+    for (let d = 1; d <= n; d++) {
+      const f = isoDia(y, m, d), c = porFecha.get(f);
+      const cls = ["cal-dia"];
+      let ocu = "", desc = "";
+      if (f === hoy) cls.push("hoy");
+      if (c) {
+        cls.push("hay");
+        const conf = c.reservas.filter((r) => r.estado === "Confirmada").length;
+        const esp = c.reservas.filter((r) => r.estado === "Lista de espera").length;
+        if (c.pasada) cls.push("pasada");
+        if (c.sinClase) { cls.push("sinclase"); ocu = "!"; desc = "sin clase pero con reservas"; }
+        else if (c.estado === "cancelada") { cls.push("cancelada"); ocu = "✕"; desc = "cancelada"; }
+        else {
+          cls.push(conf >= c.plazas ? "completa" : "abierta");
+          ocu = `${conf}/${c.plazas}`;
+          desc = `${conf} de ${c.plazas} plazas${esp ? `, ${esp} en espera` : ""}${c.pasada ? ", pasada" : ""}`;
+        }
+      } else if (f < desde || f > hasta) cls.push("fuera");
+      const label = `${capital(fechaLarga(f))}${desc ? ": " + desc : f >= hoy && f <= hasta ? ": sin clase" : ""}`;
+      const pulsable = c || (f >= desde && f <= hasta);
+      const inner = `<span class="num">${d}</span>${ocu ? `<span class="ocu">${ocu}</span>` : ""}`;
+      celdas += pulsable
+        ? `<button type="button" class="${cls.join(" ")}" data-dia="${f}" aria-pressed="${f === ADM.dia}" aria-label="${esc(label)}">${inner}</button>`
+        : `<div class="${cls.join(" ")}" aria-hidden="true">${inner}</div>`;
+    }
+    const mesPrev = isoDia(y, m - 1, 1).slice(0, 7), mesSig = isoDia(y, m + 1, 1).slice(0, 7);
+    $("adm-cal").innerHTML = `<div class="cal">
+      <div class="cal-cab">
+        <button type="button" data-mes="${mesPrev}" aria-label="Mes anterior" ${mesPrev < desde.slice(0, 7) ? "disabled" : ""}>‹</button>
+        <h2 aria-live="polite">${capital(MESES[m - 1])} ${y}</h2>
+        <button type="button" data-mes="${mesSig}" aria-label="Mes siguiente" ${mesSig > hasta.slice(0, 7) ? "disabled" : ""}>›</button>
+      </div>
+      <div class="cal-grid">${celdas}</div>
+      <div class="cal-ley" aria-hidden="true"><span style="--c:var(--ok)">Con plazas</span><span style="--c:var(--warn)">Completa</span><span style="--c:var(--err)">Cancelada</span><em style="font-style:normal">Pulsa un día sin clase para crear una clase extra.</em></div>
+    </div>`;
+  }
+  $("adm-cal").addEventListener("click", (ev) => {
+    const mes = ev.target.closest("[data-mes]");
+    if (mes && !mes.disabled) { ADM.mes = mes.dataset.mes; pintarCalAdmin(); return; }
+    const dia = ev.target.closest("[data-dia]");
+    if (!dia) return;
+    ADM.dia = dia.dataset.dia;
+    pintarAdmin();
+    const b = $("adm-cal").querySelector(`[data-dia="${ADM.dia}"]`); if (b) b.focus();
+    const t = $("adm-lista").firstElementChild; if (t && t.getBoundingClientRect().top > innerHeight - 120) t.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  function cambiarVista(v) {
+    ADM.vista = v; guardado.poner("admVista", v);
+    if (ADM.datos) pintarAdmin();
+  }
+  $("ver-lista").addEventListener("click", () => cambiarVista("lista"));
+  $("ver-cal").addEventListener("click", () => cambiarVista("cal"));
 
   function personaAdmin(r, activa, editable, c) {
     const tel = r.telefono.replace(/\s/g, "");
