@@ -126,6 +126,8 @@
   .t-espera { color: var(--warn); font-weight: 600; }
   .t-cerrada, .t-completa { color: var(--muted); }
   .t-cancelada { color: var(--err); font-weight: 600; }
+  .clase .info, .info .lugar, .info .extra { min-width: 0; overflow-wrap: anywhere; }
+  .panel .elegida, .resultado p, .pr-det, #aviso, .perfil span, .perfil small, .proxima h3, .mis li span, .salidas, .coche-alumno, details.adm summary .s, .gente .nom, .gente .prog, .ayuda { overflow-wrap: anywhere; }
   .mia { display: inline-flex; margin-top: 6px; font-size: 13px; font-weight: 600; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 3px 10px; }
   @media (max-width: 520px) {
     .clase { grid-template-columns: 58px 1fr; gap: 4px 12px; padding-right: 14px; }
@@ -178,6 +180,10 @@
   .btn.peq { width: auto; min-height: 42px; padding: 9px 14px; font-size: 15px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
   .btn:disabled { opacity: .5; cursor: not-allowed; }
   .btn[aria-busy="true"] { cursor: progress; }
+  .btn[aria-busy="true"]:disabled { opacity: .85; }
+  .btn[aria-busy="true"]::after { content: ""; display: inline-block; width: 14px; height: 14px; margin-left: 9px; vertical-align: -2px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: girar .7s linear infinite; }
+  button, a, label, summary, input { touch-action: manipulation; }
+  .gente li.saliendo { opacity: .4; transition: opacity .3s; pointer-events: none; }
   .pie { color: var(--muted); font-size: 14px; margin: 0; }
   .resultado { text-align: center; }
   .resultado .icono { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; margin: 4px auto 12px; font-size: 24px; font-weight: 700; }
@@ -630,6 +636,7 @@
     nombre(v) {
       const s = limpiar(v);
       if (!s) return "Escribe tu nombre y apellidos.";
+      if (s.length > 80) return "El nombre es demasiado largo (máximo 80 letras).";
       if (!/^[\p{L}][\p{L}\p{M}'’ .\-]*$/u.test(s)) return "Solo letras, espacios, guiones y apóstrofos.";
       if (/\p{L}{2,}\.|\.\p{L}/u.test(s)) return "Sin puntos, salvo en iniciales («J. Pérez»).";
       if (s.split(" ").filter((p) => /\p{L}{2,}/u.test(p)).length < 2) return "Escribe nombre y al menos un apellido.";
@@ -638,6 +645,7 @@
     correo(v) {
       const s = limpiar(v).replace(/\s/g, "").toLowerCase();
       if (!s) return "Escribe tu correo.";
+      if (/\S\s+\S/.test(limpiar(v))) return "El correo no puede llevar espacios. Revísalo.";
       if (!/^[a-z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*\.[a-z]{2,}$/.test(s) || /\.\.|^\.|\.@/.test(s)) return "Ese correo no parece válido. Revísalo (p. ej. nombre@gmail.com).";
       return "";
     },
@@ -688,6 +696,10 @@
         const texto = await r.text();
         let j;
         try { j = JSON.parse(texto); } catch (_) { throw Object.assign(new Error("respuesta"), { tipo: "respuesta" }); }
+        if (!j || typeof j !== "object" || Array.isArray(j)) throw Object.assign(new Error("respuesta"), { tipo: "respuesta" });
+        if (j.ok && datos.accion === "clases" && !(Array.isArray(j.clases) && j.clases.every((c) => c && typeof c.fecha === "string" && ISO.test(c.fecha) && typeof c.estado === "string"))) throw Object.assign(new Error("respuesta"), { tipo: "respuesta" });
+        if (j.ok && datos.accion === "reservar" && !(typeof j.fecha === "string" && ISO.test(j.fecha) && typeof j.clave === "string")) throw Object.assign(new Error("respuesta"), { tipo: "respuesta" });
+        if (!j.ok && typeof j.error !== "string") j.error = "No se ha podido hacer. Inténtalo de nuevo en un momento.";
         return j;
       } catch (e) {
         clearTimeout(reloj);
@@ -708,7 +720,11 @@
   let idPeticion = idUnico();  // se mantiene en los reintentos de una misma reserva
   let enviando = false;
   let perfil = guardado.leer("perfil", null);
-  let mias = guardado.leer("misReservas", []).filter((r) => r && r.fecha && r.clave);
+  const ISO = /^\d{4}-\d\d-\d\d$/;
+  /** Reservas guardadas en este dispositivo, solo las que tienen buena forma (lo demás se ignora). */
+  function leerMias() { const m = guardado.leer("misReservas", []); return (Array.isArray(m) ? m : []).filter((r) => r && typeof r.clave === "string" && typeof r.fecha === "string" && ISO.test(r.fecha)); }
+  let mias = leerMias();
+  if (perfil && (typeof perfil !== "object" || typeof perfil.correo !== "string")) { perfil = null; guardado.quitar("perfil"); }
 
   // ── Calendario ──────────────────────────────────────────────
   /**
@@ -719,7 +735,8 @@
   function desdeCache() {
     if (PRUEBA) return;
     const g = guardado.leer("clasesCache", null);
-    if (!g || !g.r || !Array.isArray(g.r.clases) || Date.now() - g.t > 7 * 864e5) return;
+    if (!g || !g.r || !Array.isArray(g.r.clases) || !(Date.now() - g.t <= 7 * 864e5)) return;
+    if (!g.r.clases.every((c) => c && typeof c.fecha === "string" && ISO.test(c.fecha) && typeof c.estado === "string")) { guardado.quitar("clasesCache"); return; }
     const hoy = new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" }), ahora = Date.now();
     const r = { ...g.r, clases: g.r.clases.filter((c) => c.fecha >= hoy).map((c) => ((c.estado === "abierta" || c.estado === "espera") && c.cierre && Date.parse(c.cierre) <= ahora ? { ...c, estado: "cerrada" } : c)) };
     mostrarClases(r);
@@ -745,6 +762,11 @@
       const b = $("reintentar"); if (b) b.onclick = () => { $("calendario").innerHTML = '<div class="clases"><div class="esqueleto"></div></div>'; cargar(); };
       return;
     }
+    try { aplicarClases(r); }
+    catch (e) { console.error(e); if (!datos) $("calendario").innerHTML = '<div class="banda error">No se ha podido mostrar el calendario. Recarga la página y, si sigue, avisa a la organización.</div>'; }
+  }
+  function aplicarClases(r) {
+    const act = $("actualizando");
     act.hidden = true; act.classList.remove("parado"); act.textContent = "Actualizando…";
     if (!PRUEBA) { const { ok, ...sinOk } = r; guardado.poner("clasesCache", { t: Date.now(), r: sinOk }); }
     mostrarClases(r);
@@ -830,7 +852,7 @@
     const tit = $("panel-titulo"), nuevo = capital(fechaLarga(c.fecha));
     if (tit.textContent !== nuevo) { tit.textContent = nuevo; tit.classList.remove("cambia"); void tit.offsetWidth; tit.classList.add("cambia"); }
     $("panel-elegida").textContent = `De ${c.inicio} a ${c.fin}` + (c.pilotos && c.pilotos.length ? ` con ${c.pilotos.join(" y ")}` : "") + (c.lugar ? `, en ${c.lugar}` : "");
-    b.disabled = enviando;
+    b.disabled = enviando; b.setAttribute("aria-busy", String(enviando));
     b.textContent = enviando ? "Enviando…" : c.estado === "espera" ? "Apuntarme a la lista de espera" : "Reservar plaza";
     $("pie").textContent = c.estado === "espera"
       ? "La clase está llena. Si alguien cancela entrarás solo, por orden, y te avisaremos por correo."
@@ -982,9 +1004,10 @@
     const estabaAbierta = c.estado === "abierta";
     enviando = true; pintarPanel();
     const lento = setTimeout(() => { $("pie").textContent = "La conexión va lenta. No cierres la página: seguimos intentándolo."; }, 6000);
-    const r = await pedir({ accion: "reservar", fecha: c.fecha, ...valores, comparteCoche, web: $("web").value, idPeticion }, { reintentos: 2, espera: 15000 });
-    clearTimeout(lento);
-    enviando = false;
+    let r;
+    try { r = await pedir({ accion: "reservar", fecha: c.fecha, ...valores, comparteCoche, web: $("web").value, idPeticion, conClases: true }, { reintentos: 2, espera: 15000 }); }
+    catch (_) { r = { ok: false, red: true, error: "No hemos podido contactar con el servidor." }; }
+    finally { clearTimeout(lento); enviando = false; }
     if (!r.ok) {
       if (r.campos && Object.keys(r.campos).some((k) => !k.startsWith("simulador"))) {
         $("perfil").hidden = true; $("campos").hidden = false;
@@ -1001,13 +1024,17 @@
     }
     // Éxito
     if ($("recordar").checked) { perfil = { nombre: r.nombre, correo: r.correo, telefono: r.telefono, municipio: r.municipio || valores.municipio, vehiculo: valores.vehiculo, comparteCoche, simulador: valores.simulador, simuladorTexto: valores.simuladorTexto }; guardado.poner("perfil", perfil); }
-    if (!$("recordar").checked) { mias = []; } // en un dispositivo que no recuerda datos tampoco se guardan reservas
-    else mias = mias.filter((m) => !(m.fecha === r.fecha && m.correo === r.correo)).concat([{ fecha: r.fecha, clave: r.clave, estado: r.estado, correo: r.correo }]);
+    // Se vuelve a leer lo guardado por si otra pestaña ha reservado mientras tanto.
+    // Si no se quieren recordar los datos, esta reserva no se guarda (las demás se dejan como estaban).
+    mias = leerMias();
+    if ($("recordar").checked) mias = mias.filter((m) => m.clave !== r.clave && !(m.fecha === r.fecha && m.correo === r.correo)).concat([{ fecha: r.fecha, clave: r.clave, estado: r.estado, correo: r.correo }]);
     guardado.poner("misReservas", mias);
     idPeticion = idUnico();
-    mostrarResultado(r, estabaAbierta);
     elegida = null;
-    cargar();
+    try { mostrarResultado(r, estabaAbierta); } catch (e) { console.error(e); pintarPanel(); mostrarToast("Reserva hecha. Te llegará un correo con los detalles."); }
+    let pintado = false;
+    if (r.calendario && r.calendario.ok && Array.isArray(r.calendario.clases)) { try { turnoCarga++; aplicarClases(r.calendario); pintado = true; } catch (e) { console.error(e); } } // ya viene el calendario nuevo
+    if (!pintado) cargar();
   });
 
   // ── Añadir al calendario ──────────────────────────────────
@@ -1129,8 +1156,8 @@
       $("si-cancelar").onclick = async (ev) => {
         ev.target.disabled = true; ev.target.textContent = "Cancelando…"; $("no-cancelar").disabled = true;
         const c = await pedir({ accion: "cancelar", clave }, { reintentos: 2 });
-        if (!c.ok) { $("aviso-cancelar").textContent = c.error; ev.target.disabled = false; ev.target.textContent = "Sí, cancelar"; $("no-cancelar").disabled = false; return; }
-        mias = mias.filter((m) => m.clave !== clave); guardado.poner("misReservas", mias);
+        if (!c.ok) { $("aviso-cancelar").textContent = c.red ? c.error + " Puede que sí se haya cancelado: recarga la página para comprobarlo." : c.error; ev.target.disabled = false; ev.target.textContent = "Sí, cancelar"; $("no-cancelar").disabled = false; return; }
+        mias = leerMias().filter((m) => m.clave !== clave); guardado.poner("misReservas", mias);
         vistaReserva.enfocar = true;
         vistaReserva(clave);
       };
@@ -1192,13 +1219,26 @@
     poner(t, recordar) { try { if (recordar) localStorage.setItem("adminToken", JSON.stringify(t)); else sessionStorage.setItem("adminToken", t); } catch (_) {} },
     quitar() { try { sessionStorage.removeItem("adminToken"); localStorage.removeItem("adminToken"); } catch (_) {} },
   };
-  const ADM = { token: tokenAdmin.leer(), datos: null, abiertas: null, mensaje: null, prev: null, antes: null, vista: guardado.leer("admVista", "lista"), mes: null, dia: null };
+  const ADM = { token: tokenAdmin.leer(), datos: null, abiertas: null, mensaje: null, prev: null, antes: null, vista: guardado.leer("admVista", "lista"), mes: null, dia: null, turno: 0, aplicado: 0, cargado: 0 };
   const hoyMadrid = () => new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
 
+  const ADMIN_CAMBIOS = ["adminCancelar", "adminApuntar", "adminDia", "adminAyudante", "adminAsistencia", "adminProgreso"];
+  const ADMIN_REPETIBLES = ["adminCancelar", "adminApuntar", "adminDia", "adminAyudante"];
   async function admPedir(d, op) {
-    const r = await pedir({ ...d, token: ADM.token }, op);
+    // Las acciones que cambian algo devuelven ya los datos nuevos: una sola petición en vez de dos.
+    // Cada petición lleva su turno: si llega tarde una respuesta más antigua, no pisa lo que ya se ve.
+    // Y un id propio: si se pierde la respuesta y se reintenta, el servidor devuelve lo de la primera vez.
+    const turno = ++ADM.turno;
+    const extra = { ...(ADMIN_CAMBIOS.includes(d.accion) ? { conDatos: true } : {}), ...(ADMIN_REPETIBLES.includes(d.accion) && !d.idPeticion ? { idPeticion: idUnico() } : {}) };
+    const r = await pedir({ ...d, token: ADM.token, ...extra }, op);
     if (!r.ok && r.codigo === "sesion") { ADM.token = null; tokenAdmin.quitar(); mostrarLogin(r.error); }
+    Object.defineProperty(r, "turno", { value: turno });
     return r;
+  }
+  /** Guarda y pinta los datos si son más recientes que los que ya se ven; si no, solo enseña el aviso. */
+  function admAplicar(datos, turno) {
+    if (turno < ADM.aplicado) { if (ADM.mensaje && !ADM.mensaje.error) mostrarToast(ADM.mensaje.texto); ADM.mensaje = null; ADM.foco = null; return; }
+    ADM.aplicado = turno; ADM.datos = datos; ADM.cargado = Date.now(); pintarAdmin();
   }
   function mostrarLogin(msg) {
     $("adm-panel").hidden = true; $("adm-entrar").hidden = true; $("adm-login").hidden = false;
@@ -1218,12 +1258,12 @@
       $("adm-entrar-btn").onclick = async () => {
         const b = $("adm-entrar-btn"); b.disabled = true; b.textContent = "Entrando…";
         const recordar = $("adm-recordar").checked;
-        const r = await pedir({ accion: "adminCanjear", t: t.trim(), recordar });
+        const r = await pedir({ accion: "adminCanjear", t: t.trim(), recordar, conDatos: true });
         b.disabled = false; b.textContent = "Entrar";
         if (!r.ok) { if (r.red) { $("aviso-entrar").textContent = r.error; return; } mostrarLogin(r.error); return; }
         ADM.token = r.token; tokenAdmin.poner(r.token, recordar);
         $("adm-entrar").hidden = true; $("adm-panel").hidden = false;
-        admCargar();
+        admUsar(r);
       };
       return;
     }
@@ -1243,26 +1283,47 @@
   });
   async function admSalir(todas) {
     if (todas && !confirm("Se cerrará tu sesión en todos los navegadores donde hayas entrado. ¿Seguir?")) return;
-    const tk = ADM.token; ADM.token = null; tokenAdmin.quitar();
-    if (tk) await pedir({ accion: "adminSalir", token: tk, todas }, { reintentos: todas ? 2 : 0 });
+    const tk = ADM.token, b = $(todas ? "adm-salir-todo" : "adm-salir");
+    if (todas && tk) {
+      // Primero se cierra en el servidor; solo si ha ido bien se dice que se ha salido en todas partes.
+      b.disabled = true; b.setAttribute("aria-busy", "true");
+      const r = await pedir({ accion: "adminSalir", token: tk, todas }, { reintentos: 2 });
+      b.disabled = false; b.removeAttribute("aria-busy");
+      if (!r.ok && r.codigo !== "sesion") { mostrarToast("No se ha podido cerrar la sesión en los demás dispositivos. " + (r.error || "") + " Inténtalo otra vez."); return; }
+    }
+    ADM.token = null; tokenAdmin.quitar();
+    if (tk && !todas) pedir({ accion: "adminSalir", token: tk, todas: false }, { reintentos: 0 });
     mostrarLogin(todas ? "Has salido en todos los dispositivos." : "Has salido. Para volver a entrar, pide otro enlace.");
   }
   $("adm-salir").addEventListener("click", () => admSalir(false));
   $("adm-salir-todo").addEventListener("click", () => admSalir(true));
   $("adm-recargar").addEventListener("click", () => admCargar());
+  // Al volver a la pestaña de administración, se recarga si lo que se ve es de hace más de un minuto (lo escrito se conserva).
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && !$("vista-admin").hidden && !$("adm-panel").hidden && ADM.token && ADM.datos && Date.now() - ADM.cargado > 60000) admCargar();
+  });
 
+  /** Pinta con los datos que trae la respuesta; si no los trae (script antiguo o fallo), los pide aparte. */
+  function admUsar(r) {
+    if (r && r.datos && r.datos.ok && Array.isArray(r.datos.clases)) admAplicar(r.datos, r.turno || 0);
+    else admCargar();
+  }
   async function admCargar() {
     const b = $("adm-recargar"); b.disabled = true;
     const r = await admPedir({ accion: "adminDatos" });
     b.disabled = false;
+    if (r.ok && !Array.isArray(r.clases)) { r.ok = false; r.error = "El servidor ha respondido algo inesperado. Pulsa Actualizar y, si sigue, recarga la página."; }
+    if (!r.ok && r.turno < ADM.aplicado) return; // ya se ve algo más reciente
     if (!r.ok) {
       if (ADM.mensaje && !ADM.mensaje.error) mostrarToast(ADM.mensaje.texto + " (No se ha podido recargar la lista: pulsa Actualizar.)");
       ADM.mensaje = null;
-      if (r.codigo !== "sesion") $("adm-lista").innerHTML = `<div class="banda error">${esc(r.error)} <button class="enlace" type="button" onclick="document.getElementById('adm-recargar').click()">Reintentar</button></div>`;
+      if (r.codigo !== "sesion") {
+        if (ADM.datos) mostrarToast(r.error + " Lo que ves puede no estar al día: pulsa Actualizar."); // no se borra lo que ya se ve ni lo que se está escribiendo
+        else $("adm-lista").innerHTML = `<div class="banda error">${esc(r.error)} <button class="enlace" type="button" onclick="document.getElementById('adm-recargar').click()">Reintentar</button></div>`;
+      }
       return;
     }
-    ADM.datos = r;
-    pintarAdmin();
+    admAplicar(r, r.turno);
   }
 
   const ESTADO_CHIP = { abierta: ["ok", "Abierta"], espera: ["warn", "Completa"], completa: ["warn", "Completa"], cerrada: ["", "Reservas cerradas"], cancelada: ["err", "Cancelada"] };
@@ -1292,15 +1353,55 @@
       html = futuras.length ? futuras.map(tarjetaAdmin).join("") : '<div class="vacio">No hay clases en las próximas semanas.</div>';
       if (pasadas.length) html += `<h2 style="margin-top:24px">Últimas dos semanas</h2>` + pasadas.map(tarjetaAdmin).join("");
     }
+    const guardados = guardarFormularios();
     $("adm-lista").innerHTML = html;
+    const conFoco = restaurarFormularios(guardados);
     $("adm-lista").querySelectorAll("details.adm").forEach((el) => el.addEventListener("toggle", () => { el.open ? ADM.abiertas.add(el.dataset.fecha) : ADM.abiertas.delete(el.dataset.fecha); }));
     if (ADM.mensaje) {
       const card = document.querySelector(`details.adm[data-fecha="${ADM.mensaje.fecha}"]`);
       if (ADM.mensaje.error) { const b = card && card.querySelector(".banda"); if (b) { b.setAttribute("tabindex", "-1"); b.focus(); } }
-      else { mostrarToast(ADM.mensaje.texto); if (card) card.querySelector("summary").focus({ preventScroll: true }); }
+      else { mostrarToast(ADM.mensaje.texto); if (card && !conFoco && !ADM.foco) card.querySelector("summary").focus({ preventScroll: true }); }
     }
     if (ADM.foco) { const f = document.querySelector(ADM.foco); if (f) f.focus({ preventScroll: true }); ADM.foco = null; } // vuelve el foco al botón pulsado
     ADM.mensaje = null;
+  }
+
+  /**
+   * Al repintar (tras cualquier cambio, «Actualizar» o cambio de vista) no se pierde lo que se estaba escribiendo:
+   * se apuntan los formularios abiertos con sus valores y se vuelven a poner igual.
+   * El formulario que acaba de guardarse se cierra (se marca con data-hecho antes de repintar).
+   */
+  function guardarFormularios() {
+    // Se guardan también los de tarjetas que ahora no se ven (p. ej. al pasar de Lista a Calendario y volver).
+    const mapa = ADM.formularios || (ADM.formularios = new Map()), act = document.activeElement;
+    $("adm-lista").querySelectorAll("form.caja[id]").forEach((f) => {
+      if (f.hidden || f.dataset.hecho) { mapa.delete(f.id); return; }
+      const campos = [...f.elements].filter((x) => x.name).map((x) => (x.type === "radio" || x.type === "checkbox" ? [x.name, x.value, x.checked] : [x.name, x.value]));
+      const tags = [...f.querySelectorAll("[data-etiqueta][aria-pressed=true]")].map((b) => b.dataset.etiqueta);
+      mapa.set(f.id, { id: f.id, campos, tags, idPet: f.dataset.id || "", foco: act && f.contains(act) && act.name ? act.name : "" });
+    });
+    return [...mapa.values()];
+  }
+  function restaurarFormularios(lista) {
+    let conFoco = false;
+    for (const g of lista) {
+      const f = document.getElementById(g.id); if (!f) continue;
+      f.hidden = false;
+      const btn = document.querySelector(`[data-abrir="${CSS.escape(g.id)}"]`); if (btn) btn.setAttribute("aria-expanded", "true");
+      for (const [n, v, chk] of g.campos) {
+        const els = [...f.elements].filter((x) => x.name === n);
+        for (const x of els) {
+          if (x.type === "radio" || x.type === "checkbox") { if (x.value === v) x.checked = chk; }
+          else { x.value = v; if (x.type === "range") x.dispatchEvent(new Event("input", { bubbles: true })); }
+        }
+      }
+      const tipo = f.querySelector("input[name=tipo]:checked"), sc = f.querySelector(".solo-cambio"); if (tipo && sc) sc.hidden = tipo.value !== "cambio";
+      f.querySelectorAll("[data-etiqueta]").forEach((b) => b.setAttribute("aria-pressed", String(g.tags.includes(b.dataset.etiqueta))));
+      if (g.idPet) f.dataset.id = g.idPet;
+      if (g.foco && !ADM.foco) { const i = f.elements[g.foco]; const el = i && i.length && !i.tagName ? i[0] : i; if (el && el.focus) { el.focus({ preventScroll: true }); conFoco = true; } }
+      g.foco = "";
+    }
+    return conFoco;
   }
 
   // ── Calendario de la administración ──
@@ -1444,7 +1545,7 @@
     if (!b.ayudante || c.ayudante == null || c.sinClase || c.estado === "cancelada" || c.pasada) return "";
     const fijo = c.empezada, n = esc(b.ayudante);
     return `<div class="ayudante">
-      <span class="q">¿Viene ${n}?<small>${c.ayudante ? `Con ${n}: ${c.plazas} plazas. Si no viene, quedan ${Math.max(0, c.plazas - b.masConAyudante)}.` : `Sin ${n}: ${c.plazas} plazas. Si viene, suben a ${c.plazas + b.masConAyudante}.`}${fijo ? " La clase ya ha empezado." : ""}</small></span>
+      <span class="q">¿Viene ${n}?<small>${c.plazasCon != null && c.plazasCon === c.plazasSin ? `${c.plazas} plazas fijadas a mano en este día: que venga o no, no cambia las plazas.` : c.ayudante ? `Con ${n}: ${c.plazas} plazas. Si no viene, quedan ${c.plazasSin != null ? c.plazasSin : Math.max(0, c.plazas - b.masConAyudante)}.` : `Sin ${n}: ${c.plazas} plazas. Si viene, suben a ${c.plazasCon != null ? c.plazasCon : c.plazas + b.masConAyudante}.`}${fijo ? " La clase ya ha empezado." : ""}</small></span>
       <span class="sn seg" role="group" aria-label="¿Viene ${n}?">
         <button type="button" data-ayudante="${c.fecha}" data-viene="true" aria-pressed="${c.ayudante === true}" ${fijo ? "disabled" : ""}>Sí</button>
         <button type="button" data-ayudante="${c.fecha}" data-viene="false" aria-pressed="${c.ayudante === false}" ${fijo ? "disabled" : ""}>No</button>
@@ -1569,19 +1670,30 @@
       par.forEach((x) => { x.disabled = true; x.setAttribute("aria-pressed", String(x === asis && !!asis.dataset.valor)); });
       ADM.foco = `[data-asis="${CSS.escape(asis.dataset.asis)}"].${asis.classList.contains("vino") ? "vino" : "novino"}`;
       const r = await admPedir({ accion: "adminAsistencia", numero: asis.dataset.asis, valor: asis.dataset.valor }, { reintentos: 1 });
-      if (!r.ok) { if (r.codigo !== "sesion") { alert(r.error); par.forEach((x, i) => { x.disabled = false; x.setAttribute("aria-pressed", antes[i]); }); } return; }
+      if (!r.ok) { if (r.codigo !== "sesion") { alert(r.error); ADM.foco = null; par.forEach((x, i) => { x.disabled = false; x.setAttribute("aria-pressed", antes[i]); }); asis.focus(); } return; }
       ADM.mensaje = { fecha, texto: r.asistencia ? `Asistencia guardada: ${r.asistencia.toLowerCase()}.` : "Asistencia borrada." };
-      admCargar();
+      admUsar(r);
       return;
     }
-    const ayu = ev.target.closest("[data-ayudante]");
+    let ayu = ev.target.closest("[data-ayudante]");
     if (ayu) {
-      if (ayu.getAttribute("aria-pressed") === "true") return;
-      const fecha = ayu.dataset.ayudante, viene = ayu.dataset.viene === "true", c = ADM.datos.clases.find((x) => x.fecha === fecha), b = ADM.datos.base;
-      if (!viene && c) {
-        const nuevas = Math.max(0, c.plazas - b.masConAyudante);
+      const fecha = ayu.dataset.ayudante, viene = ayu.dataset.viene === "true";
+      // Si ya está marcado (o lo que se ve es de hace rato), primero se recarga: puede que otra pestaña lo haya cambiado.
+      if (ayu.getAttribute("aria-pressed") === "true" || Date.now() - ADM.cargado > 120000) {
+        const ya = ayu.getAttribute("aria-pressed") === "true";
+        ADM.foco = `[data-ayudante="${fecha}"][data-viene="${viene}"]`;
+        await admCargar();
+        if (ya) { const c2 = ADM.datos && ADM.datos.clases.find((x) => x.fecha === fecha); mostrarToast(c2 && c2.ayudante === viene ? `Ya estaba guardado: ${ADM.datos.base.ayudante} ${viene ? "viene" : "no viene"}.` : "Lo que veías no estaba al día (se cambió desde otro sitio). Ya está actualizado: vuelve a elegir."); return; }
+        const otra = document.querySelector(`[data-ayudante="${fecha}"][data-viene="${viene}"]`);
+        if (!otra || otra.disabled || otra.getAttribute("aria-pressed") === "true") return;
+        ayu = otra;
+      }
+      const c = ADM.datos.clases.find((x) => x.fecha === fecha), b = ADM.datos.base;
+      const fijas = c && c.plazasCon != null && c.plazasCon === c.plazasSin;
+      if (!viene && c && c.ayudante !== false && !fijas) {
+        const nuevas = c.plazasSin != null ? c.plazasSin : Math.max(0, c.plazas - b.masConAyudante);
         const conf = c.reservas.filter((r) => r.estado === "Confirmada").sort((x, y) => (x.creada || "").localeCompare(y.creada || "") || String(x.numero).localeCompare(String(y.numero), "es", { numeric: true }));
-        const k = Math.min(Math.max(0, conf.length - nuevas), b.masConAyudante); // solo sobran los que quita este cambio
+        const k = Math.min(Math.max(0, conf.length - nuevas), Math.max(0, c.plazas - nuevas)); // solo sobran los que quita este cambio
         const fuera = conf.slice(conf.length - k).map((r) => r.nombre);
         if (fuera.length && !confirm(`Sin ${b.ayudante} quedan ${nuevas} plazas y hay ${conf.length} apuntados. ${fuera.length === 1 ? "La última persona en apuntarse" : "Las últimas en apuntarse"} (${fuera.join(", ")}) ${b.listaEspera ? "pasará" + (fuera.length === 1 ? "" : "n") + " a la lista de espera" : (fuera.length === 1 ? "perderá su plaza" : "perderán su plaza")} y se le${fuera.length === 1 ? "" : "s"} avisará por correo. ¿Seguir?`)) return;
       }
@@ -1589,9 +1701,9 @@
       botones.forEach((x) => { x.disabled = true; x.setAttribute("aria-pressed", String(x === ayu)); }); // la pastilla se desliza ya, sin esperar al servidor
       ADM.foco = `[data-ayudante="${fecha}"][data-viene="${viene}"]`;
       const r = await admPedir({ accion: "adminAyudante", fecha, viene }, { reintentos: 1 });
-      if (!r.ok) { if (r.codigo !== "sesion") { alert(r.error); botones.forEach((x, i) => { x.disabled = false; x.setAttribute("aria-pressed", antes[i]); }); } return; }
-      ADM.mensaje = { fecha, texto: `Guardado: ${b.ayudante} ${r.viene ? "viene" : "no viene"}, ${r.plazas} plazas.` + (r.bajados && r.bajados.length ? ` ${r.bajados.join(", ")} ${b.listaEspera ? "pasa" + (r.bajados.length === 1 ? "" : "n") + " a la lista de espera" : "pierde" + (r.bajados.length === 1 ? "" : "n") + " su plaza"} y se le${r.bajados.length === 1 ? "" : "s"} ha avisado.` : "") + (r.ascendidos && r.ascendidos.length ? ` Han entrado desde la lista de espera: ${r.ascendidos.join(", ")}.` : "") };
-      admCargar();
+      if (!r.ok) { if (r.codigo !== "sesion") { alert(r.error); ADM.foco = null; botones.forEach((x, i) => { x.disabled = false; x.setAttribute("aria-pressed", antes[i]); }); ayu.focus(); } return; }
+      ADM.mensaje = { fecha, texto: `Guardado: ${b.ayudante} ${r.viene ? "viene" : "no viene"}, ${r.plazas} plazas.` + (r.bajados && r.bajados.length ? ` ${r.bajados.slice().reverse().join(", ")} ${b.listaEspera ? "pasa" + (r.bajados.length === 1 ? "" : "n") + " a la lista de espera" : "pierde" + (r.bajados.length === 1 ? "" : "n") + " su plaza"} y se le${r.bajados.length === 1 ? "" : "s"} ha avisado.` : "") + (r.ascendidos && r.ascendidos.length ? ` Han entrado desde la lista de espera: ${r.ascendidos.join(", ")}.` : "") };
+      admUsar(r);
       return;
     }
     const etq = ev.target.closest("[data-etiqueta]");
@@ -1610,11 +1722,11 @@
     if (quitar) {
       const fecha = quitar.closest("details.adm").dataset.fecha;
       if (!confirm(`¿Quitar a ${quitar.dataset.nombre} de la clase del ${fechaLarga(fecha)}? Le llegará un correo avisando.`)) return;
-      quitar.disabled = true; quitar.textContent = "Quitando…";
+      quitar.disabled = true; quitar.textContent = "Quitando…"; quitar.closest("li").classList.add("saliendo");
       const r = await admPedir({ accion: "adminCancelar", numero: quitar.dataset.quitar }, { reintentos: 2 });
-      if (!r.ok) { if (r.codigo !== "sesion") { alert(r.error); quitar.disabled = false; quitar.textContent = "Quitar"; } return; }
+      if (!r.ok) { if (r.codigo !== "sesion") { alert(r.error); quitar.disabled = false; quitar.textContent = "Quitar"; quitar.closest("li").classList.remove("saliendo"); quitar.focus(); } return; }
       ADM.mensaje = { fecha, texto: `${quitar.dataset.nombre} ya no está en la clase.` + (r.ascendidos && r.ascendidos.length ? ` Ha entrado desde la lista de espera: ${r.ascendidos.join(", ")}.` : "") };
-      admCargar();
+      admUsar(r);
     }
   });
   $("adm-lista").addEventListener("input", (ev) => {
@@ -1633,7 +1745,7 @@
     const aviso = (k, t) => { const a = f.querySelector(`[data-aviso="${k}"]`); if (a) a.textContent = t || ""; const i = f.elements[k]; if (i && i.setAttribute) i.setAttribute("aria-invalid", t ? "true" : "false"); };
     f.querySelectorAll("[data-aviso]").forEach((a) => (a.textContent = ""));
     const boton = f.querySelector("button[type=submit]"), textoBoton = boton.textContent;
-    const ocupado = (si) => { boton.disabled = si; boton.textContent = si ? "Guardando…" : textoBoton; };
+    const ocupado = (si) => { boton.disabled = si; boton.setAttribute("aria-busy", String(si)); boton.textContent = si ? "Guardando…" : textoBoton; };
     if (f.dataset.progreso) {
       const fecha = f.closest("details.adm").dataset.fecha;
       const min = Number(f.elements.minutos.value) || 0, horas = min ? String(Math.round((min / 60) * 100) / 100) : "";
@@ -1641,11 +1753,13 @@
       const nota = limpiar([tags.join(", "), limpiar(f.elements.nota.value)].filter(Boolean).join(". ")).slice(0, 300);
       if (!horas && !nota) { aviso("nota", "Pon el tiempo de vuelo, toca lo que ha practicado o escribe una nota."); f.elements.minutos.focus(); return; }
       ocupado(true);
-      const r = await admPedir({ accion: "adminProgreso", numero: f.dataset.progreso, horas, nota }, { reintentos: 1 });
+      if (!f.dataset.id) f.dataset.id = idUnico(); // el mismo id en los reintentos: no suma dos veces
+      const r = await admPedir({ accion: "adminProgreso", numero: f.dataset.progreso, horas, nota, idPeticion: f.dataset.id }, { reintentos: 1 });
       ocupado(false);
       if (!r.ok) { if (r.campos) Object.entries(r.campos).forEach(([k, t]) => aviso(k, t)); else if (r.codigo !== "sesion") aviso("general", r.error); return; }
+      f.dataset.hecho = "1";
       ADM.mensaje = { fecha, texto: `Progreso de ${f.dataset.nombre} guardado: ${String(r.horas).replace(".", ",")} h de vuelo en total.` };
-      admCargar();
+      admUsar(r);
       return;
     }
     if (f.dataset.meteo) {
@@ -1655,14 +1769,15 @@
       const r = await admPedir({ accion: "adminDia", fecha, tipo: "cancelada", nota: (det ? base.replace(/\.$/, "") + ": " + det : base).slice(0, 200) }, { reintentos: 1 });
       ocupado(false);
       if (!r.ok) { if (r.codigo !== "sesion") aviso("general", r.error); return; }
+      f.dataset.hecho = "1";
       ADM.mensaje = { fecha, texto: "Clase cancelada por meteo." + (r.avisados ? ` Se ha avisado a ${r.avisados} persona${r.avisados === 1 ? "" : "s"}.` : "") + " Si mejora el tiempo, edita el día y vuelve a ponerla en marcha: las reservas se recuperan." };
-      admCargar();
+      admUsar(r);
       return;
     }
     if (f.dataset.apuntar) {
       const fecha = f.dataset.apuntar;
       const v = { nombre: limpiar(f.elements.nombre.value), correo: limpiar(f.elements.correo.value).replace(/\s/g, "").toLowerCase(), telefono: limpiar(f.elements.telefono.value) };
-      let mal = false; for (const k of Object.keys(v)) { const e = validar[k](v[k]); aviso(k, e); if (e && !mal) { mal = true; f.elements[k].focus(); } }
+      let mal = false; for (const k of Object.keys(v)) { const e = (validar[k](v[k]) || "").replace(/\btu\b/g, "su").replace(/\bTu\b/g, "Su"); aviso(k, e); if (e && !mal) { mal = true; f.elements[k].focus(); } }
       if (mal) return;
       v.simulador = (f.querySelector("input[name=simulador]:checked") || {}).value || "";
       v.simuladorTexto = v.simulador === "si" ? limpiar(f.elements.simuladorTexto.value) : "";
@@ -1674,8 +1789,9 @@
       if (!r.ok && r.codigo === "llena" && confirm(r.error)) r = await admPedir({ accion: "adminApuntar", fecha, ...v, avisar: f.elements.avisar.checked, forzar: true }, { reintentos: 1 });
       ocupado(false);
       if (!r.ok) { if (r.campos) Object.entries(r.campos).forEach(([k, t]) => aviso(k, t)); if (r.codigo === "llena") aviso("general", "No se ha apuntado: la clase está llena."); else if (r.codigo !== "sesion") aviso("general", r.error); const mal = f.querySelector("[aria-invalid=true]"); if (mal) mal.focus(); return; }
+      f.dataset.hecho = "1";
       ADM.mensaje = { fecha, texto: `${r.nombre} está apuntado.` + (f.elements.avisar.checked ? (r.correoEnviado ? " Le hemos enviado el correo." : " No se pudo enviar el correo.") : "") };
-      admCargar();
+      admUsar(r);
     } else if (f.dataset.editar) {
       const fecha = f.dataset.editar, tipo = (f.querySelector("input[name=tipo]:checked") || {}).value;
       if (!tipo) { aviso("general", "Elige qué pasa este día."); return; }
@@ -1684,6 +1800,13 @@
       if (tipo === "cancelada" && c && c.estado !== "cancelada" && !confirm(activas ? `Se cancelará la clase del ${fechaLarga(fecha)} y se avisará por correo a ${activas} persona${activas === 1 ? "" : "s"}. ¿Seguir?` : `¿Cancelar la clase del ${fechaLarga(fecha)}?`)) return;
       const confirmadas = c ? c.reservas.filter((r) => r.estado === "Confirmada").length : 0;
       const plazasNuevas = tipo === "cambio" ? f.elements.plazas.value.trim() : "";
+      if (tipo === "cambio") {
+        const ex = f.elements.extra.value.trim().replace("−", "-");
+        let malo = false;
+        if (plazasNuevas !== "" && !/^\d{1,3}$/.test(plazasNuevas)) { aviso("plazas", "Pon un número entero de 0 a 100, o déjalo vacío."); malo = true; }
+        if (ex !== "" && !/^-?\d{1,2}$/.test(ex)) { aviso("extra", "Pon un número entero (puede ser negativo, p. ej. -2)."); malo = true; }
+        if (malo) { const m = f.querySelector("[aria-invalid=true]"); if (m) m.focus(); return; }
+      }
       if (plazasNuevas !== "" && Number(plazasNuevas) < confirmadas && !confirm(`Hay ${confirmadas} apuntados y dejas ${plazasNuevas} plazas. Nadie se da de baja solo: quita tú a quien sobre. ¿Guardar?`)) return;
       const datosDia = { accion: "adminDia", fecha, tipo, nota: f.elements.nota.value };
       if (tipo === "cambio") ["inicio", "fin", "pilotos", "extra", "plazas", "lugar"].forEach((k) => (datosDia[k] = f.elements[k].value.trim().replace("−", "-")));
@@ -1696,8 +1819,9 @@
       const r = await admPedir(datosDia, { reintentos: 1 });
       ocupado(false);
       if (!r.ok) { if (r.campos) Object.entries(r.campos).forEach(([k, t]) => aviso(k, t)); if (r.codigo !== "sesion") aviso("general", r.campos ? "Revisa los datos marcados." : r.error); const mal = f.querySelector("[aria-invalid=true]"); if (mal) mal.focus(); return; }
+      f.dataset.hecho = "1";
       ADM.mensaje = { fecha, texto: "Día guardado." + (r.restauradas ? ` ${r.restauradas} reserva${r.restauradas === 1 ? " vuelve" : "s vuelven"} a estar como antes de cancelar y se les ha avisado.` : "") + (r.avisadosHorario ? ` Se ha avisado del cambio a ${r.avisadosHorario} persona${r.avisadosHorario === 1 ? "" : "s"}.` : "") + (r.aviso ? " " + r.aviso : "") + (r.avisados ? ` Se ha avisado a ${r.avisados} persona${r.avisados === 1 ? "" : "s"}.` : "") + (r.ascendidos && r.ascendidos.length ? ` Han entrado desde la lista de espera: ${r.ascendidos.join(", ")}.` : "") };
-      admCargar();
+      admUsar(r);
     }
   });
 
@@ -1719,6 +1843,7 @@
     desdeCache();
     cargar().then(comprobarMias);
     // Al volver a la pestaña, se recarga el calendario por si ha cambiado algo.
+    // (La administración hace lo mismo más abajo.)
     let ultimaCarga = Date.now();
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "visible" && Date.now() - ultimaCarga > 60000 && !enviando) { ultimaCarga = Date.now(); cargar(); }
