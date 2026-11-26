@@ -9,5 +9,5 @@
 //  index.html para que nadie se quede con la versión vieja.
 // ─────────────────────────────────────────────────────────────
 window.CONFIG = {
-  api: "https://script.google.com/macros/s/AKfycbyBvHYerkqi0do9yY8xfiQCuKn2HtHACKnPCxbbidgyxff5F4HG8fPRZk5qAzSzym-D7w/exec",
+  api: "https://script.google.com/macros/s/AKfycby50DHS7JW7vRun71juOv8QvgDCjFuMklu1j709QEINKDPNujocwr7aZaRI88-J0WtKSQ/exec",
 };
