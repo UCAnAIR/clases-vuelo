@@ -1511,7 +1511,7 @@
     return `<li class="${activa ? "" : "inactiva"}${espera ? " espera" : ""}${nueva ? " nueva" : ""}">
       <span class="av" style="--h:${tono(r.nombre)}" aria-hidden="true">${esc(iniciales(r.nombre))}</span>
       <span class="nom">${esc(r.nombre)}${espera ? ' <span class="chip warn">Lista de espera</span>' : ""}${r.faltas ? ` <span class="chip falta" title="Veces que no vino sin avisar">${r.faltas} falta${r.faltas === 1 ? "" : "s"}${umbral && r.faltas >= umbral ? " · sin prioridad" : ""}</span>` : ""}${r.simulador && !/^sí:/i.test(r.simulador) ? ` <span class="chip sim" title="¿Ha usado el simulador?">Simulador: ${esc(r.simulador.toLowerCase())}</span>` : ""}${activa ? "" : ` <span class="chip">${esc(r.estado)}</span>`}</span>
-      <span class="acc">${activa && editable ? `<button type="button" class="btn secondary peq" data-quitar="${esc(r.numero)}" data-nombre="${esc(r.nombre)}">Quitar</button>` : ""}</span>
+      <span class="acc">${activa && editable ? `<button type="button" class="btn secondary peq" data-quitar="${esc(r.numero)}" data-nombre="${esc(r.nombre)}">Quitar</button>` : !activa && editable ? `<button type="button" class="btn secondary peq" data-volver="${esc(r.numero)}" data-nombre="${esc(r.nombre)}">Volver a apuntar</button>` : ""}</span>
       <span class="con"><a href="tel:${esc(tel)}">${esc(r.telefono)}</a> · <a href="mailto:${esc(r.correo)}">${esc(r.correo)}</a></span>
       ${r.vehiculo || r.municipio ? `<span class="con">${esc([r.municipio, r.vehiculo ? (r.vehiculo === "No" ? "sin vehículo" : r.vehiculo.toLowerCase()) : ""].filter(Boolean).join(" · "))}</span>` : ""}
       ${r.simulador && /^sí:/i.test(r.simulador) ? `<span class="sim-txt"><b>Simulador:</b> ${esc(r.simulador.replace(/^sí:\s*/i, ""))}</span>` : ""}
@@ -1557,6 +1557,9 @@
     const conf = c.reservas.filter((r) => r.estado === "Confirmada");
     const esp = c.reservas.filter((r) => r.estado === "Lista de espera");
     const bajas = c.reservas.filter((r) => r.estado !== "Confirmada" && r.estado !== "Lista de espera");
+    // A quien se le anuló se le puede volver a apuntar (si la clase sigue en pie y no está ya apuntado otra vez).
+    const puedeVolver = !c.pasada && !c.empezada && !c.sinClase && c.estado !== "cancelada";
+    const activos = new Set(conf.concat(esp).map((r) => String(r.correo).toLowerCase()));
     const editable = !c.pasada;
     let chip = c.sinClase ? ["err", "Sin clase"] : c.pasada ? ["", "Pasada"] : (ESTADO_CHIP[c.estado] || ["", c.estado]);
     const ex0 = c.excepcion; // una fila que solo dice si viene el ayudante no es un «cambio» del día
@@ -1587,7 +1590,7 @@
           ${c.coche.viajes.map((v) => `<li>${esc(v.conductor)} (coche, ${esc(v.municipio)}) puede llevar a ${esc(v.pasajeros.join(", "))}</li>`).join("")}
           ${c.coche.sinCoche.map((p) => { const con = c.coche.conCoche.filter((x) => x.sitios > 0); return `<li>${esc(p.nombre)} (${esc(p.municipio || "¿?")}) no tiene vehículo${con.length ? `. Con coche van: ${esc(con.map((x) => x.nombre + " (" + x.municipio + ")").join(", "))}` : " y nadie de la clase lleva coche"}</li>`; }).join("")}
         </ul></div>` : ""}
-        ${bajas.length ? `<details><summary class="ayuda" style="cursor:pointer;padding:10px 0">Bajas y anuladas (${bajas.length})</summary><ul class="gente">${bajas.map((r) => personaAdmin(r, false, false)).join("")}</ul></details>` : ""}
+        ${bajas.length ? `<details><summary class="ayuda" style="cursor:pointer;padding:10px 0">Bajas y anuladas (${bajas.length})</summary><ul class="gente">${bajas.map((r) => personaAdmin(r, false, puedeVolver && !activos.has(String(r.correo).toLowerCase()), c)).join("")}</ul></details>` : ""}
         ${editable ? `<div class="adm-botones">
           ${!c.sinClase && c.estado !== "cancelada" ? `<button type="button" class="btn secondary peq" data-abrir="apuntar-${id}" aria-expanded="false" aria-controls="apuntar-${id}">Apuntar a alguien</button>` : ""}
           <button type="button" class="btn secondary peq" data-abrir="editar-${id}" aria-expanded="false" aria-controls="editar-${id}">Editar este día</button>
@@ -1716,6 +1719,27 @@
       const inp = paso.parentElement.querySelector("input"), v = parseInt(String(inp.value).replace("−", "-"), 10) || 0;
       inp.value = String(Math.max(-20, Math.min(20, v + Number(paso.dataset.paso))));
       inp.classList.remove("cambia"); void inp.offsetWidth; inp.classList.add("cambia");
+      return;
+    }
+    const volver = ev.target.closest("[data-volver]");
+    if (volver) {
+      const fecha = volver.closest("details.adm").dataset.fecha, c = ADM.datos.clases.find((x) => x.fecha === fecha);
+      const p = c && c.reservas.find((x) => String(x.numero) === volver.dataset.volver);
+      if (!p) return;
+      if (!confirm(`¿Volver a apuntar a ${p.nombre} en la clase del ${fechaLarga(fecha)}? Le llegará un correo con su plaza confirmada.`)) return;
+      // Sus datos de la reserva anulada; el simulador se guardó como «No», «Sí» o «Sí: lo que sabe hacer».
+      const sim = String(p.simulador || "").trim(), simNo = /^no$/i.test(sim), simSi = !simNo && !!sim;
+      const v = { nombre: p.nombre, correo: p.correo, telefono: p.telefono, municipio: p.municipio || "", vehiculo: String(p.vehiculo || "").toLowerCase(),
+        simulador: simNo ? "no" : simSi ? "si" : "", simuladorTexto: simSi ? sim.replace(/^sí:?\s*/i, "") : "", avisar: true };
+      volver.disabled = true; volver.textContent = "Apuntando…";
+      let r = await admPedir({ accion: "adminApuntar", fecha, ...v }, { reintentos: 1 });
+      if (!r.ok && r.codigo === "llena" && confirm(r.error)) r = await admPedir({ accion: "adminApuntar", fecha, ...v, forzar: true }, { reintentos: 1 });
+      if (!r.ok) {
+        if (r.codigo !== "sesion" && r.codigo !== "llena") alert((r.campos ? "Sus datos guardados no valen tal cual (" + Object.values(r.campos).join(" ") + "). Apúntale con «Apuntar a alguien» y corrígelos." : r.error));
+        volver.disabled = false; volver.textContent = "Volver a apuntar"; volver.focus(); return;
+      }
+      ADM.mensaje = { fecha, texto: `${r.nombre} vuelve a estar apuntado.` + (r.correoEnviado ? " Le hemos enviado el correo." : " No se pudo enviar el correo.") };
+      admUsar(r);
       return;
     }
     const quitar = ev.target.closest("[data-quitar]");
