@@ -11,6 +11,9 @@
 <meta name="theme-color" content="#1f1e1d" media="(prefers-color-scheme: dark)">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="icon" href="icono.svg" type="image/svg+xml">
+<link rel="icon" href="icono-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="icono-180.png">
 <link rel="preconnect" href="https://script.google.com" crossorigin>
 <link rel="preconnect" href="https://script.googleusercontent.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -34,10 +37,10 @@
     :root {
       --bg: #1f1e1d; --surface: #2a2927; --field: #32312e; --line: #3b3a37; --line-strong: #52504c; --input-line: #827f78; --seat-taken: #6b6964;
       --track: #1c1b1a; --thumb: #46443f; --toast: #ecebe7; --toast-ink: #1f1e1d;
-      --ink: #ecebe7; --muted: #b8b6af; --accent: #8cc2dd; --accent-soft: #2c3337;
+      --ink: #ecebe7; --muted: #b8b6af; --accent: #b7c7ce; --accent-soft: #363635;
       --orange: #f0a252; --orange-soft: #3a2e20;
       --ok: #8fd1ad; --ok-soft: #26302a; --warn: #eec571; --warn-soft: #36301f; --err: #ff978c; --err-soft: #3d2826;
-      --btn: #8cc2dd; --btn-ink: #102530;
+      --btn: #ecebe7; --btn-ink: #1f1e1d;
       --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 32px -14px rgba(0,0,0,.6);
       --shadow-hover: 0 1px 2px rgba(0,0,0,.35), 0 16px 36px -14px rgba(0,0,0,.7);
       --shadow-pop: 0 1px 3px rgba(0,0,0,.4), 0 20px 48px -16px rgba(0,0,0,.75);
@@ -214,7 +217,7 @@
   .mis { margin-bottom: 32px; }
   .proxima { display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; align-items: center; padding: 18px 20px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); margin-bottom: 12px; }
   .proxima .pr-fecha { width: 78px; text-align: center; border-radius: 12px; background: var(--accent); color: #fff; padding: 9px 0 10px; font-family: var(--display); line-height: 1; }
-  @media (prefers-color-scheme: dark) { .proxima .pr-fecha { color: #102530; } }
+  @media (prefers-color-scheme: dark) { .proxima .pr-fecha { background: var(--thumb); color: var(--ink); } }
   .proxima .pr-fecha .dow, .proxima .pr-fecha .mes { display: block; margin: 0; color: inherit; font-size: 13px; font-weight: 600; opacity: .9; text-transform: uppercase; letter-spacing: .06em; }
   .proxima .pr-fecha .num { display: block; font-size: 38px; font-weight: 700; margin: 3px 0; font-variant-numeric: tabular-nums; }
   .proxima .pr-eyebrow { margin: 0; font-size: 14px; font-weight: 600; color: var(--orange); text-transform: uppercase; letter-spacing: .06em; }
@@ -347,7 +350,7 @@
   .gente li > .acc { grid-column: 3; grid-row: 1 / span 2; }
   .gente li > .av { grid-column: 1; grid-row: 1 / span 2; align-self: start; margin-top: 2px; }
   .av { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700; letter-spacing: .02em; background: hsl(var(--h) 55% 88%); color: hsl(var(--h) 45% 26%); transition: opacity .4s; }
-  @media (prefers-color-scheme: dark) { .av { background: hsl(var(--h) 25% 30%); color: hsl(var(--h) 60% 86%); } }
+  @media (prefers-color-scheme: dark) { .av { background: hsl(var(--h) 8% 33%); color: hsl(var(--h) 12% 88%); } }
   .gente li.espera .av, .gente li.espera .nom, .gente li.espera .con, .gente li.espera .prog { opacity: .55; }
   .gente li.nueva { animation: subir .45s var(--ease) both; }
   .gente .nom { font-weight: 600; font-size: 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
